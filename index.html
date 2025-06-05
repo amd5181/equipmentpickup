@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment Pickup Station</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Tailwind Configuration for theme colors and fonts */
+        :root {
+            --color-primary-orange: #FF8C00; /* DarkOrange */
+            --color-secondary-orange: #FFA500; /* Orange */
+            --color-white: #FFFFFF;
+            --color-black: #1A1A1A; /* Slightly off-black for softer look */
+            --color-dark-grey: #333333;
+            --color-light-grey: #E0E0E0;
+        }
+
+        /* Applying custom colors to Tailwind */
+        .bg-primary-orange { background-color: var(--color-primary-orange); }
+        .bg-secondary-orange { background-color: var(--color-secondary-orange); }
+        .bg-white { background-color: var(--color-white); }
+        .bg-black { background-color: var(--color-black); }
+        .bg-dark-grey { background-color: var(--color-dark-grey); }
+        .bg-light-grey { background-color: var(--color-light-grey); }
+
+        .text-primary-orange { color: var(--color-primary-orange); }
+        .text-white { color: var(--color-white); }
+        .text-black { color: var(--color-black); }
+        .text-dark-grey { color: var(--color-dark-grey); }
+
+        .border-primary-orange { border-color: var(--color-primary-orange); }
+        .border-black { border-color: var(--color-black); }
+        .border-light-grey { border-color: var(--color-light-grey); }
+
+        /* Custom font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Specific styles for bin responsiveness */
+        .bin {
+            @apply flex flex-col items-center justify-center text-center p-2 sm:p-4 rounded-lg cursor-pointer transition-all duration-200 ease-in-out shadow-lg;
+            min-height: 120px; /* Minimum height for touch target */
+            height: 100%; /* Ensure bins fill their grid area */
+        }
+
+        .bin-small {
+            @apply w-full h-full;
+        }
+
+        .bin-large {
+            @apply w-full h-full;
+            min-height: 180px; /* Larger minimum height for large bins */
+        }
+
+        /* Occupied bin state */
+        .bin.occupied {
+            @apply bg-primary-orange text-white;
+        }
+
+        /* Empty bin state */
+        .bin.empty {
+            @apply bg-white text-black border-2 border-light-grey;
+        }
+
+        /* Hover effect for bins */
+        .bin:hover {
+            @apply transform scale-105 shadow-xl;
+        }
+
+        /* Modal specific styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Hide scrollbar for kiosk mode, if present */
+        body {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col p-4 sm:p-8">
+    <!-- Main Application Container -->
+    <div id="app" class="flex flex-col flex-grow w-full max-w-7xl mx-auto rounded-xl shadow-2xl bg-dark-grey overflow-hidden">
+        <!-- Header -->
+        <header class="bg-black py-4 px-6 rounded-t-xl text-center shadow-lg">
+            <h1 class="text-3xl sm:text-4xl font-bold text-primary-orange">Equipment Pickup Station</h1>
+        </header>
+
+        <!-- Bin Grid Container -->
+        <main class="flex-grow p-4 sm:p-8 grid gap-4 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
+            <!-- Bins will be dynamically inserted here by JavaScript -->
+        </main>
+
+        <!-- Large Bins Row -->
+        <section class="p-4 sm:p-8 pt-0 grid gap-4 grid-rows-1 grid-cols-3 auto-rows-fr">
+            <!-- Large bins will be dynamically inserted here by JavaScript -->
+        </section>
+    </div>
+
+    <!-- Bin Details Modal -->
+    <div id="binModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden modal-overlay">
+        <div class="bg-white text-black p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg md:max-w-xl lg:max-w-2xl transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center text-primary-orange">Bin Details</h2>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label for="modalBinNumber" class="block text-dark-grey text-sm sm:text-base font-medium mb-1">Bin Number:</label>
+                    <input type="text" id="modalBinNumber" class="w-full p-3 border border-light-grey rounded-lg bg-light-grey text-black font-semibold cursor-not-allowed" readonly>
+                </div>
+                <div>
+                    <label for="modalName" class="block text-dark-grey text-sm sm:text-base font-medium mb-1">Name:</label>
+                    <input type="text" id="modalName" class="w-full p-3 border border-light-grey rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange" placeholder="Enter name">
+                </div>
+                <div>
+                    <label for="modalDate" class="block text-dark-grey text-sm sm:text-base font-medium mb-1">Date:</label>
+                    <input type="date" id="modalDate" class="w-full p-3 border border-light-grey rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange">
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="markPickedUpBtn" class="flex-1 bg-primary-orange text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-secondary-orange transition-colors duration-200 shadow-md">
+                    Mark as Picked Up
+                </button>
+                <button id="saveChangesBtn" class="flex-1 bg-dark-grey text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-black transition-colors duration-200 shadow-md">
+                    Save Changes
+                </button>
+                <button id="closeModalBtn" class="flex-1 bg-light-grey text-black py-3 px-6 rounded-lg font-bold text-lg hover:bg-dark-grey hover:text-white transition-colors duration-200 shadow-md">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Define the structure for storing bin data
+        // Each bin will have: { name: string, date: string, isOccupied: boolean }
+        let bins = {};
+        let currentBinId = null; // To keep track of which bin is currently being edited
+
+        const TOTAL_SMALL_BINS = 15;
+        const TOTAL_LARGE_BINS = 3;
+        const LOCAL_STORAGE_KEY = 'equipmentPickupBins';
+
+        // Get DOM elements
+        const smallBinsContainer = document.querySelector('main');
+        const largeBinsContainer = document.querySelector('section');
+        const binModal = document.getElementById('binModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalBinNumberInput = document.getElementById('modalBinNumber');
+        const modalNameInput = document.getElementById('modalName');
+        const modalDateInput = document.getElementById('modalDate');
+        const markPickedUpBtn = document.getElementById('markPickedUpBtn');
+        const saveChangesBtn = document.getElementById('saveChangesBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        /**
+         * Initializes the bins array from localStorage or creates default empty bins.
+         */
+        function loadBins() {
+            const storedBins = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (storedBins) {
+                bins = JSON.parse(storedBins);
+            } else {
+                // Initialize all bins as empty
+                for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
+                    bins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
+                }
+                for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
+                    bins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
+                }
+                saveBins(); // Save the initial empty state
+            }
+        }
+
+        /**
+         * Saves the current bins array to localStorage.
+         */
+        function saveBins() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(bins));
+        }
+
+        /**
+         * Renders all bin elements based on the current `bins` data.
+         * Clears existing bins and re-appends them to ensure UI is up-to-date.
+         */
+        function renderBins() {
+            // Clear existing bins
+            smallBinsContainer.innerHTML = '';
+            largeBinsContainer.innerHTML = '';
+
+            // Render small bins
+            for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
+                const binId = `bin-${i}`;
+                const binData = bins[binId];
+                const binElement = createBinElement(binId, `Bin ${i}`, binData, 'bin-small');
+                smallBinsContainer.appendChild(binElement);
+            }
+
+            // Render large bins
+            for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
+                const binId = `bin-large-${i}`;
+                const binData = bins[binId];
+                const binElement = createBinElement(binId, `Large Bin ${i}`, binData, 'bin-large');
+                largeBinsContainer.appendChild(binElement);
+            }
+        }
+
+        /**
+         * Creates a single bin DOM element.
+         * @param {string} id - The unique ID for the bin (e.g., 'bin-1', 'bin-large-1').
+         * @param {string} displayNum - The number to display on the bin (e.g., 'Bin 1', 'Large Bin 1').
+         * @param {object} data - The bin's data {name, date, isOccupied}.
+         * @param {string} sizeClass - 'bin-small' or 'bin-large' for styling.
+         * @returns {HTMLElement} The created bin div element.
+         */
+        function createBinElement(id, displayNum, data, sizeClass) {
+            const binDiv = document.createElement('div');
+            binDiv.id = id;
+            binDiv.className = `bin ${sizeClass} ${data.isOccupied ? 'occupied' : 'empty'}`;
+            binDiv.innerHTML = `
+                <span class="text-xl sm:text-2xl font-bold mb-2">${displayNum}</span>
+                ${data.isOccupied ? `<p class="text-sm sm:text-base truncate w-full px-1">${data.name}</p><p class="text-xs sm:text-sm">${data.date}</p>` : `<p class="text-sm sm:text-base text-dark-grey">Empty</p>`}
+            `;
+            binDiv.addEventListener('click', () => openModal(id));
+            return binDiv;
+        }
+
+        /**
+         * Opens the bin details modal, populating it with data for the clicked bin.
+         * @param {string} binId - The ID of the bin to open details for.
+         */
+        function openModal(binId) {
+            currentBinId = binId;
+            const binData = bins[binId];
+
+            // Determine if it's a small or large bin to display correctly
+            const binNumberText = binId.startsWith('bin-large')
+                ? `Large Bin ${binId.split('-')[2]}`
+                : `Bin ${binId.split('-')[1]}`;
+
+            modalBinNumberInput.value = binNumberText;
+            modalNameInput.value = binData.name;
+            modalDateInput.value = binData.date;
+
+            // Animate modal in
+            binModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('opacity-0', 'scale-95');
+                modalContent.classList.add('opacity-100', 'scale-100');
+            }, 10); // Small delay to allow 'display: block' to apply before transition
+        }
+
+        /**
+         * Hides the bin details modal with a transition.
+         */
+        function closeModal() {
+            modalContent.classList.remove('opacity-100', 'scale-100');
+            modalContent.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                binModal.classList.add('hidden');
+                currentBinId = null; // Clear current bin ID
+            }, 300); // Match transition duration
+        }
+
+        /**
+         * Handles the "Mark as Picked Up" action.
+         * Clears bin data and updates UI.
+         */
+        function markAsPickedUp() {
+            if (currentBinId) {
+                bins[currentBinId] = { name: '', date: '', isOccupied: false };
+                saveBins();
+                renderBins();
+                closeModal();
+            }
+        }
+
+        /**
+         * Handles saving changes from the modal.
+         * Updates bin data and UI.
+         */
+        function saveChanges() {
+            if (currentBinId) {
+                const newName = modalNameInput.value.trim();
+                const newDate = modalDateInput.value;
+
+                if (newName || newDate) { // Bin is occupied if either name or date is entered
+                    bins[currentBinId] = {
+                        name: newName,
+                        date: newDate,
+                        isOccupied: true
+                    };
+                } else { // If both are empty, bin is considered empty
+                    bins[currentBinId] = { name: '', date: '', isOccupied: false };
+                }
+
+                saveBins();
+                renderBins();
+                closeModal();
+            }
+        }
+
+        // Event Listeners for modal buttons
+        markPickedUpBtn.addEventListener('click', markAsPickedUp);
+        saveChangesBtn.addEventListener('click', saveChanges);
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // Close modal when clicking outside the content (on the overlay)
+        binModal.addEventListener('click', (event) => {
+            if (event.target === binModal) {
+                closeModal();
+            }
+        });
+
+        // Initialize the app on DOM content loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBins();
+            renderBins();
+        });
+    </script>
+</body>
+</html>
