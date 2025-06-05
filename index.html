@@ -144,7 +144,7 @@
         </header>
 
         <!-- Loading Indicator -->
-        <div id="loadingIndicator" class="absolute inset-0 bg-page-background flex items-center justify-center z-40">
+        <div id="loadingIndicator" class="absolute inset-0 bg-page-background flex items-center justify-center z-40 hidden">
             <div class="loading-spinner"></div>
             <p class="text-text-dark ml-4 text-xl">Loading data...</p>
         </div>
@@ -196,16 +196,14 @@
     </div>
 
     <script>
-        // IMPORTANT: Replaced this with the URL of your deployed Google Apps Script Web App
         const GOOGLE_APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbymRyL-zhnyYU95KVn_dICxY5ixxs_FD98eQQaKKGrdKEsY67SwRyzYn4KyNgIT7PoR_w/exec';
 
-        let bins = {}; // Stores bin data
-        let currentBinId = null; // To keep track of which bin is currently being edited
+        let bins = {};
+        let currentBinId = null;
 
         const TOTAL_SMALL_BINS = 15;
         const TOTAL_LARGE_BINS = 3;
 
-        // Get DOM elements
         const smallBinsContainer = document.querySelector('main');
         const largeBinsContainer = document.querySelector('section');
         const modalOverlay = document.getElementById('modalOverlay');
@@ -233,7 +231,7 @@
          * Fetches bin data from the Google Sheet via Apps Script.
          */
         async function fetchBinsFromSheet() {
-            loadingIndicator.classList.remove('hidden');
+            loadingIndicator.classList.remove('hidden'); // Show loading indicator
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
                     console.warn("Google Apps Script URL not set. Using default empty bins.");
@@ -250,8 +248,6 @@
 
                 const fetchedBins = {};
                 if (data && data.length > 0) {
-                    // Assuming data is an array of objects like:
-                    // { 'Bin ID': 'bin-1', 'Name': 'Item A', 'Date': '2023-01-01', 'isOccupied': 'TRUE' }
                     data.forEach(row => {
                         const binId = row['Bin ID'];
                         if (binId) {
@@ -265,7 +261,6 @@
                     });
                 }
 
-                // Initialize any missing bins if the sheet doesn't have all 18 entries
                 for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
                     const id = `bin-${i}`;
                     if (!fetchedBins[id]) {
@@ -285,10 +280,9 @@
             } catch (error) {
                 console.error("Error fetching bins from sheet:", error);
                 alert("Error loading bin data from Google Sheet. Check console for details.");
-                // Fallback to default empty bins if fetching fails
                 initializeDefaultBins();
             } finally {
-                loadingIndicator.classList.add('hidden');
+                loadingIndicator.classList.add('hidden'); // Hide loading indicator
             }
         }
 
@@ -305,9 +299,7 @@
             }
             bins = defaultBins;
             renderBins();
-            loadingIndicator.classList.add('hidden');
         }
-
 
         /**
          * Renders all bin elements based on the current `bins` data.
@@ -375,7 +367,7 @@
 
             modalBinNumberInput.value = binNumberText;
             modalNameInput.value = binData.name;
-            modalDateInput.value = binData.date;
+            modalDateInput.value = binData.date; // This value is already in YYYY-MM-DD from Apps Script
 
             modalOverlay.classList.remove('hidden');
             setTimeout(() => {
@@ -398,14 +390,14 @@
 
         /**
          * Updates bin data in the Google Sheet via Apps Script.
+         * This function now just sends the update request in the background.
          * @param {string} binId - The ID of the bin to update.
          * @param {object} data - The new data for the bin.
          */
         async function updateBinInSheet(binId, data) {
-            loadingIndicator.classList.remove('hidden');
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
-                     alert("Google Apps Script URL not set. Cannot save data.");
+                     console.error("Google Apps Script URL not set. Cannot save data.");
                      return;
                 }
                 const payload = {
@@ -416,26 +408,23 @@
                     isOccupied: data.isOccupied
                 };
 
-                const response = await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
+                // Sending the request without 'await' blocks the UI, but we still want to catch errors.
+                // It's effectively 'fire and forget' for immediate UI feedback.
+                await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Required for simple POST requests from Apps Script
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(payload),
                 });
 
-                // Since we use no-cors, we can't check response.ok or read response.json()
-                // We'll rely on the Apps Script to confirm success (or check the sheet directly)
                 console.log(`Update request sent for bin ${binId}.`);
-                // Re-fetch data to reflect changes from the sheet
-                await fetchBinsFromSheet();
 
             } catch (error) {
-                console.error("Error updating bin in sheet:", error);
-                alert("Error saving data to Google Sheet. Check console for details.");
-            } finally {
-                loadingIndicator.classList.add('hidden');
+                console.error("Error sending update request to sheet:", error);
+                // Optionally alert user here if the background save itself fails
+                alert("An error occurred during background save. Please check console.");
             }
         }
 
@@ -446,8 +435,17 @@
         async function markAsPickedUp() {
             if (currentBinId) {
                 const emptyBinData = { name: '', date: '', isOccupied: false };
+
+                // Optimistic UI update
+                bins[currentBinId] = { ...emptyBinData }; // Update local state immediately
+                renderBins(); // Re-render instantly
+                closeModal(); // Close modal instantly
+
+                // Send update to sheet in the background
                 await updateBinInSheet(currentBinId, emptyBinData);
-                closeModal();
+
+                // Re-fetch data after a short delay to ensure consistency (optional, but good for multi-device)
+                setTimeout(fetchBinsFromSheet, 2000); // 2-second delay before refresh
             }
         }
 
@@ -470,8 +468,17 @@
                 } else {
                     newBinData = { name: '', date: '', isOccupied: false };
                 }
+
+                // Optimistic UI update
+                bins[currentBinId] = { ...newBinData }; // Update local state immediately
+                renderBins(); // Re-render instantly
+                closeModal(); // Close modal instantly
+
+                // Send update to sheet in the background
                 await updateBinInSheet(currentBinId, newBinData);
-                closeModal();
+
+                // Re-fetch data after a short delay to ensure consistency (optional, but good for multi-device)
+                setTimeout(fetchBinsFromSheet, 2000); // 2-second delay before refresh
             }
         }
 
@@ -489,7 +496,7 @@
 
         // Initialize the app on DOM content loaded
         document.addEventListener('DOMContentLoaded', () => {
-            fetchBinsFromSheet(); // Fetch data from Google Sheet on app load
+            fetchBinsFromSheet(); // Initial data fetch on app load
         });
     </script>
 </body>
