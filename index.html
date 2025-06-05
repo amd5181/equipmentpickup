@@ -134,13 +134,17 @@
     <!-- Main Application Container -->
     <div id="app" class="flex flex-col flex-grow w-full max-w-7xl mx-auto rounded-3xl shadow-2xl bg-app-background overflow-hidden">
         <!-- Header -->
-        <header class="bg-app-background py-5 px-6 rounded-t-3xl text-center shadow-md">
+        <header class="bg-app-background py-5 px-6 rounded-t-3xl text-center shadow-md relative">
             <h1 class="text-4xl sm:text-5xl font-extrabold text-black-solid tracking-tight mb-2">
                 <span class="text-primary-orange">Pickup</span> Station
             </h1>
             <p class="text-xl sm:text-2xl text-text-light mb-4 leading-relaxed">
                 Once you receive your equipment, please select your name and mark it as picked up. Thank you!
             </p>
+            <!-- Refresh Counter -->
+            <div id="refreshCounter" class="absolute top-4 right-4 bg-primary-orange text-white text-lg font-bold px-3 py-1 rounded-full shadow-md">
+                Refreshing in 10s
+            </div>
         </header>
 
         <!-- Loading Indicator -->
@@ -200,6 +204,8 @@
 
         let bins = {};
         let currentBinId = null;
+        let refreshCountdown = 10; // Initial countdown value
+        let countdownInterval; // To store the interval ID for clearing
 
         const TOTAL_SMALL_BINS = 15;
         const TOTAL_LARGE_BINS = 3;
@@ -215,6 +221,7 @@
         const saveChangesBtn = document.getElementById('saveChangesBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const refreshCounterDisplay = document.getElementById('refreshCounter'); // Get the counter element
 
         /**
          * Formats a date string from ISO (YYYY-MM-DD) to M/D/YY.
@@ -225,6 +232,25 @@
             if (!dateString) return '';
             const [year, month, day] = dateString.split('-');
             return `${parseInt(month)}/${parseInt(day)}/${year.slice(-2)}`;
+        }
+
+        /**
+         * Starts or resets the refresh countdown timer.
+         */
+        function startRefreshCountdown() {
+            clearInterval(countdownInterval); // Clear any existing interval
+            refreshCountdown = 10; // Reset countdown
+            refreshCounterDisplay.textContent = `Refreshing in ${refreshCountdown}s`;
+
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0) {
+                    clearInterval(countdownInterval);
+                    fetchBinsFromSheet(); // Trigger refresh when countdown reaches 0
+                } else {
+                    refreshCounterDisplay.textContent = `Refreshing in ${refreshCountdown}s`;
+                }
+            }, 1000); // Update every second
         }
 
         /**
@@ -254,7 +280,6 @@
                             fetchedBins[binId] = {
                                 name: row['Name'] || '',
                                 date: row['Date'] || '',
-                                // Fix: Explicitly convert to string before toLowerCase()
                                 isOccupied: String(row['isOccupied'] || '').toLowerCase() === 'true'
                             };
                         }
@@ -283,382 +308,7 @@
                 initializeDefaultBins();
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
-            }
-        }
-
-        /**
-         * Initializes all bins as empty if no data is loaded (e.g., on first run or error).
-         */
-        function initializeDefaultBins() {
-            const defaultBins = {};
-            for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
-                defaultBins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
-            }
-            for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
-                defaultBins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
-            }
-            bins = defaultBins;
-            renderBins();
-        }
-
-        /**
-         * Renders all bin elements based on the current `bins` data.
-         * Clears existing bins and re-appends them to ensure UI is up-to-date.
-         */
-        function renderBins() {
-            smallBinsContainer.innerHTML = '';
-            largeBinsContainer.innerHTML = '';
-
-            for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
-                const binId = `bin-${i}`;
-                const binData = bins[binId];
-                const binElement = createBinElement(binId, `Bin ${i}`, binData, 'bin-small');
-                smallBinsContainer.appendChild(binElement);
-            }
-
-            for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
-                const binId = `bin-large-${i}`;
-                const sequentialBinNumber = TOTAL_SMALL_BINS + i;
-                const binData = bins[binId];
-                const binElement = createBinElement(binId, `Bin ${sequentialBinNumber}`, binData, 'bin-large');
-                largeBinsContainer.appendChild(binElement);
-            }
-        }
-
-        /**
-         * Creates a single bin DOM element.
-         * @param {string} id - The unique ID for the bin.
-         * @param {string} displayNum - The number to display on the bin.
-         * @param {object} data - The bin's data {name, date, isOccupied}.
-         * @param {string} sizeClass - 'bin-small' or 'bin-large' for styling.
-         * @returns {HTMLElement} The created bin div element.
-         */
-        function createBinElement(id, displayNum, data, sizeClass) {
-            const binDiv = document.createElement('div');
-            binDiv.id = id;
-            binDiv.className = `bin ${sizeClass} ${data.isOccupied ? 'occupied' : 'empty'}`;
-
-            const contentHTML = data.isOccupied ?
-                `<div class="flex flex-col items-start w-full px-4 text-left">
-                    <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
-                    <p class="text-lg sm:text-xl font-bold break-words w-full">${data.name}</p>
-                    <p class="text-sm sm:text-base italic text-date-text mt-1">${formatDate(data.date)}</p>
-                </div>` :
-                `<div class="flex flex-col items-start w-full px-4 text-left">
-                    <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
-                </div>`;
-
-            binDiv.innerHTML = contentHTML;
-            binDiv.addEventListener('click', () => openModal(id));
-            return binDiv;
-        }
-
-        /**
-         * Opens the bin details modal, populating it with data for the clicked bin.
-         * @param {string} binId - The ID of the bin to open details for.
-         */
-        function openModal(binId) {
-            currentBinId = binId;
-            const binData = bins[binId] || { name: '', date: '', isOccupied: false };
-
-            const binNumberText = binId.startsWith('bin-large')
-                ? `Bin ${TOTAL_SMALL_BINS + parseInt(binId.split('-')[2])}`
-                : `Bin ${binId.split('-')[1]}`;
-
-            modalBinNumberInput.value = binNumberText;
-            modalNameInput.value = binData.name;
-            modalDateInput.value = binData.date; // This value is already in
-I'll update the Canvas to include automatic data refreshing every 10 seconds. This will ensure that your kiosk app consistently displays the most up-to-date information from your Google Sheet, even if changes are made from other devices or directly in the sheet. I've also corrected a minor typo in the event listener for the "Mark as Picked Up" button.
-
-Here's the updated code for your `pickup-station-app` Canvas:
-
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equipment Pickup Station</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <style>
-        /* Custom Tailwind Configuration for theme colors and fonts */
-        :root {
-            --color-page-background: #E8E8E8; /* Slightly darker grey for better contrast */
-            --color-app-background: #FFFFFF;   /* Pure white for the main app container */
-            --color-bin-background: #FFFFFF;   /* White for all bins */
-
-            /* Darker Orange Palette */
-            --color-primary-orange: #B35200;   /* A deep, rich orange for accents and glows */
-            --color-secondary-orange: #CC6600; /* A slightly brighter but still dark orange for hover states */
-
-            --color-text-dark: #333333; /* Dark grey for primary text */
-            --color-text-light: #666666; /* Lighter grey for secondary text */
-            --color-black-solid: #1A1A1A; /* Near black for strong contrast elements */
-
-            --color-border-light: #E0E0E0; /* Light grey for subtle borders */
-            --color-modal-overlay-bg: rgba(0, 0, 0, 0.85); /* Increased opacity for a more solid background */
-            --color-date-text: #9E9E9E; /* Medium grey for dates */
-        }
-
-        /* Applying custom colors to Tailwind classes */
-        .bg-page-background { background-color: var(--color-page-background); }
-        .bg-app-background { background-color: var(--color-app-background); }
-        .bg-bin-background { background-color: var(--color-bin-background); }
-        .bg-primary-orange { background-color: var(--color-primary-orange); }
-        .bg-secondary-orange { background-color: var(--color-secondary-orange); }
-        .bg-black-solid { background-color: var(--color-black-solid); }
-
-        .text-primary-orange { color: var(--color-primary-orange); }
-        .text-text-dark { color: var(--color-text-dark); }
-        .text-text-light { color: var(--color-text-light); }
-        .text-white { color: #FFFFFF; } /* Keep explicit white for contrast on dark buttons */
-        .text-date-text { color: var(--color-date-text); }
-
-
-        .border-primary-orange { border-color: var(--color-primary-orange); }
-        .border-border-light { border-color: var(--color-border-light); }
-
-        /* Moved modal overlay background to its dedicated element */
-        #modalOverlay {
-            background-color: var(--color-modal-overlay-bg);
-        }
-
-        /* Custom font */
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased; /* Smoother text rendering */
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Specific styles for bin responsiveness and improved appearance */
-        .bin {
-            @apply flex flex-col p-3 sm:p-5 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
-            min-height: 120px;
-            height: 100%;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .bin-small {
-            @apply w-full h-full;
-        }
-
-        .bin-large {
-            @apply w-full h-full;
-            min-height: 180px;
-        }
-
-        /* Occupied bin state - now uses thicker orange outline and subtle orange glow */
-        .bin.occupied {
-            @apply border-4 border-primary-orange text-text-dark;
-            box-shadow: 0 0 15px rgba(179, 82, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.12);
-        }
-
-        /* Empty bin state */
-        .bin.empty {
-            @apply text-text-light;
-        }
-
-        /* Hover effect for bins - more pronounced animation and glow */
-        .bin:hover {
-            @apply transform scale-[1.07] shadow-2xl;
-            border-color: var(--color-primary-orange);
-            box-shadow: 0 0 20px rgba(179, 82, 0, 0.6), 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Modal specific styles */
-        .modal-content-box {
-            @apply bg-app-background text-text-dark p-6 sm:p-10 rounded-full shadow-2xl;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Main app container rounding */
-        #app {
-            @apply rounded-3xl;
-        }
-
-        /* Header rounding - adjusted for app container */
-        #app header {
-            @apply rounded-t-3xl;
-        }
-
-        /* Hide scrollbar for kiosk mode, if present */
-        body {
-            overflow: hidden;
-        }
-
-        /* Loading indicator styles */
-        .loading-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid var(--color-primary-orange);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body class="bg-page-background text-text-dark min-h-screen flex flex-col p-4 sm:p-8">
-    <!-- Main Application Container -->
-    <div id="app" class="flex flex-col flex-grow w-full max-w-7xl mx-auto rounded-3xl shadow-2xl bg-app-background overflow-hidden">
-        <!-- Header -->
-        <header class="bg-app-background py-5 px-6 rounded-t-3xl text-center shadow-md">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-black-solid tracking-tight mb-2">
-                <span class="text-primary-orange">Pickup</span> Station
-            </h1>
-            <p class="text-xl sm:text-2xl text-text-light mb-4 leading-relaxed">
-                Once you receive your equipment, please select your name and mark it as picked up. Thank you!
-            </p>
-        </header>
-
-        <!-- Loading Indicator -->
-        <div id="loadingIndicator" class="absolute inset-0 bg-page-background flex items-center justify-center z-40 hidden">
-            <div class="loading-spinner"></div>
-            <p class="text-text-dark ml-4 text-xl">Loading data...</p>
-        </div>
-
-        <!-- Bin Grid Container -->
-        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
-            <!-- Bins will be dynamically inserted here by JavaScript -->
-        </main>
-
-        <!-- Large Bins Row -->
-        <section class="p-6 sm:p-10 pt-0 grid gap-6 grid-rows-1 grid-cols-3 auto-rows-fr">
-            <!-- Large bins will be dynamically inserted here by JavaScript -->
-        </section>
-    </div>
-
-    <!-- Bin Details Modal (Overlay) -->
-    <div id="modalOverlay" class="fixed inset-0 flex items-center justify-center p-4 z-50 hidden">
-        <!-- Modal Content Box -->
-        <div class="modal-content-box transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
-            <h2 class="text-3xl sm:text-4xl font-bold mb-8 text-center text-black-solid">Bin Details</h2>
-
-            <div class="space-y-6 mb-8">
-                <div>
-                    <label for="modalBinNumber" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Bin Number:</label>
-                    <input type="text" id="modalBinNumber" class="w-full p-4 border border-border-light rounded-full bg-page-background text-text-dark font-semibold cursor-not-allowed focus:outline-none" readonly>
-                </div>
-                <div>
-                    <label for="modalName" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Name:</label>
-                    <input type="text" id="modalName" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark placeholder-text-light" placeholder="Enter name">
-                </div>
-                <div>
-                    <label for="modalDate" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Date:</label>
-                    <input type="date" id="modalDate" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark">
-                </div>
-            </div>
-
-            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <button id="markPickedUpBtn" class="flex-1 bg-primary-orange text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:bg-secondary-orange transition-colors duration-200 shadow-md">
-                    Mark as Picked Up
-                </button>
-                <button id="saveChangesBtn" class="flex-1 bg-black-solid text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:opacity-90 transition-opacity duration-200 shadow-md">
-                    Save Changes
-                </button>
-                <button id="closeModalBtn" class="flex-1 bg-border-light text-text-dark py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:bg-page-background transition-colors duration-200 shadow-md">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const GOOGLE_APPS_SCRIPT_WEB_APP_URL = '[https://script.google.com/macros/s/AKfycbymRyL-zhnyYU95KVn_dICxY5ixxs_FD98eQQaKKGrdKEsY67SwRyzYn4KyNgIT7PoR_w/exec](https://script.google.com/macros/s/AKfycbymRyL-zhnyYU95KVn_dICxY5ixxs_FD98eQQaKKGrdKEsY67SwRyzYn4KyNgIT7PoR_w/exec)';
-
-        let bins = {};
-        let currentBinId = null;
-
-        const TOTAL_SMALL_BINS = 15;
-        const TOTAL_LARGE_BINS = 3;
-
-        const smallBinsContainer = document.querySelector('main');
-        const largeBinsContainer = document.querySelector('section');
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalContent = document.getElementById('modalContent');
-        const modalBinNumberInput = document.getElementById('modalBinNumber');
-        const modalNameInput = document.getElementById('modalName');
-        const modalDateInput = document.getElementById('modalDate');
-        const markPickedUpBtn = document.getElementById('markPickedUpBtn');
-        const saveChangesBtn = document.getElementById('saveChangesBtn');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-
-        /**
-         * Formats a date string from ISO (YYYY-MM-DD) to M/D/YY.
-         * @param {string} dateString - The date string in ISO (YYYY-MM-DD) format.
-         * @returns {string} The formatted date string (M/D/YY) or empty string if input is empty.
-         */
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const [year, month, day] = dateString.split('-');
-            return `${parseInt(month)}/${parseInt(day)}/${year.slice(-2)}`;
-        }
-
-        /**
-         * Fetches bin data from the Google Sheet via Apps Script.
-         */
-        async function fetchBinsFromSheet() {
-            loadingIndicator.classList.remove('hidden'); // Show loading indicator
-            try {
-                if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
-                    console.warn("Google Apps Script URL not set. Using default empty bins.");
-                    alert("Please deploy your Google Apps Script and update 'GOOGLE_APPS_SCRIPT_WEB_APP_URL' in the code.");
-                    return initializeDefaultBins();
-                }
-
-                const response = await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL + '?action=read');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log("Data fetched from Google Sheet:", data);
-
-                const fetchedBins = {};
-                if (data && data.length > 0) {
-                    data.forEach(row => {
-                        const binId = row['Bin ID'];
-                        if (binId) {
-                            fetchedBins[binId] = {
-                                name: row['Name'] || '',
-                                date: row['Date'] || '',
-                                // Fix: Explicitly convert to string before toLowerCase()
-                                isOccupied: String(row['isOccupied'] || '').toLowerCase() === 'true'
-                            };
-                        }
-                    });
-                }
-
-                for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
-                    const id = `bin-${i}`;
-                    if (!fetchedBins[id]) {
-                        fetchedBins[id] = { name: '', date: '', isOccupied: false };
-                    }
-                }
-                for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
-                    const id = `bin-large-${i}`;
-                    if (!fetchedBins[id]) {
-                        fetchedBins[id] = { name: '', date: '', isOccupied: false };
-                    }
-                }
-
-                bins = fetchedBins;
-                renderBins();
-
-            } catch (error) {
-                console.error("Error fetching bins from sheet:", error);
-                alert("Error loading bin data from Google Sheet. Check console for details.");
-                initializeDefaultBins();
-            } finally {
-                loadingIndicator.classList.add('hidden'); // Hide loading indicator
+                startRefreshCountdown(); // Restart countdown after fetch
             }
         }
 
@@ -784,8 +434,6 @@ Here's the updated code for your `pickup-station-app` Canvas:
                     isOccupied: data.isOccupied
                 };
 
-                // Sending the request without 'await' blocks the UI, but we still want to catch errors.
-                // It's effectively 'fire and forget' for immediate UI feedback.
                 await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -799,7 +447,6 @@ Here's the updated code for your `pickup-station-app` Canvas:
 
             } catch (error) {
                 console.error("Error sending update request to sheet:", error);
-                // Optionally alert user here if the background save itself fails
                 alert("An error occurred during background save. Please check console.");
             }
         }
@@ -873,7 +520,7 @@ Here's the updated code for your `pickup-station-app` Canvas:
         // Initialize the app on DOM content loaded
         document.addEventListener('DOMContentLoaded', () => {
             fetchBinsFromSheet(); // Initial data fetch on app load
-            setInterval(fetchBinsFromSheet, 10000); // Auto-refresh every 10 seconds
+            startRefreshCountdown(); // Start the countdown immediately
         });
     </script>
 </body>
