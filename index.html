@@ -58,11 +58,10 @@
 
         /* Specific styles for bin responsiveness and improved appearance */
         .bin {
-            /* Now using rounded-full for individual bins */
-            @apply flex flex-col p-3 sm:p-5 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background; /* Increased duration for smoother animation */
-            min-height: 120px; /* Minimum height for touch target */
-            height: 100%; /* Ensure bins fill their grid area */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Subtle default shadow */
+            @apply flex flex-col p-3 sm:p-5 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
+            min-height: 120px;
+            height: 100%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .bin-small {
@@ -71,13 +70,12 @@
 
         .bin-large {
             @apply w-full h-full;
-            min-height: 180px; /* Larger minimum height for large bins */
+            min-height: 180px;
         }
 
         /* Occupied bin state - now uses thicker orange outline and subtle orange glow */
         .bin.occupied {
-            @apply border-4 border-primary-orange text-text-dark; /* Thicker border */
-            /* Added orange glow effect */
+            @apply border-4 border-primary-orange text-text-dark;
             box-shadow: 0 0 15px rgba(179, 82, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.12);
         }
 
@@ -88,37 +86,47 @@
 
         /* Hover effect for bins - more pronounced animation and glow */
         .bin:hover {
-            @apply transform scale-[1.07] shadow-2xl; /* Stronger scale, more distinct shadow */
-            border-color: var(--color-primary-orange); /* Keep primary orange border on hover */
-            /* Added orange glow on hover */
+            @apply transform scale-[1.07] shadow-2xl;
+            border-color: var(--color-primary-orange);
             box-shadow: 0 0 20px rgba(179, 82, 0, 0.6), 0 10px 25px rgba(0, 0, 0, 0.2);
         }
 
         /* Modal specific styles */
         .modal-content-box {
-            /* Now using rounded-full for the modal content box */
-            /* Constrained width for popup feel */
             @apply bg-app-background text-text-dark p-6 sm:p-10 rounded-full shadow-2xl;
-            width: 90%; /* Max 90% of parent width */
-            max-width: 500px; /* Maximum width for larger screens */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Stronger shadow for modal */
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
 
         /* Main app container rounding */
         #app {
-            /* Reverted to a more subtle rounding for the main container */
             @apply rounded-3xl;
         }
 
         /* Header rounding - adjusted for app container */
         #app header {
-             /* Rounded-full to match app container's top curvature */
-            @apply rounded-t-3xl; /* Changed to rounded-t-3xl to align with app container's top rounding */
+            @apply rounded-t-3xl;
         }
 
         /* Hide scrollbar for kiosk mode, if present */
         body {
             overflow: hidden;
+        }
+
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--color-primary-orange);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -130,11 +138,16 @@
             <h1 class="text-4xl sm:text-5xl font-extrabold text-black-solid tracking-tight mb-2">
                 <span class="text-primary-orange">Pickup</span> Station
             </h1>
-            <!-- Subtitle message: Increased font size to text-xl sm:text-2xl -->
             <p class="text-xl sm:text-2xl text-text-light mb-4 leading-relaxed">
                 Once you receive your equipment, please select your name and mark it as picked up. Thank you!
             </p>
         </header>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="absolute inset-0 bg-page-background flex items-center justify-center z-40">
+            <div class="loading-spinner"></div>
+            <p class="text-text-dark ml-4 text-xl">Loading data...</p>
+        </div>
 
         <!-- Bin Grid Container -->
         <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
@@ -183,19 +196,18 @@
     </div>
 
     <script>
-        // Define the structure for storing bin data
-        // Each bin will have: { name: string, date: string, isOccupied: boolean }
-        let bins = {};
+        // IMPORTANT: Replaced this with the URL of your deployed Google Apps Script Web App
+        const GOOGLE_APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbymRyL-zhnyYU95KVn_dICxY5ixxs_FD98eQQaKKGrdKEsY67SwRyzYn4KyNgIT7PoR_w/exec';
+
+        let bins = {}; // Stores bin data
         let currentBinId = null; // To keep track of which bin is currently being edited
 
         const TOTAL_SMALL_BINS = 15;
         const TOTAL_LARGE_BINS = 3;
-        const LOCAL_STORAGE_KEY = 'equipmentPickupBins';
 
         // Get DOM elements
         const smallBinsContainer = document.querySelector('main');
         const largeBinsContainer = document.querySelector('section');
-        // Renamed binModal to modalOverlay
         const modalOverlay = document.getElementById('modalOverlay');
         const modalContent = document.getElementById('modalContent');
         const modalBinNumberInput = document.getElementById('modalBinNumber');
@@ -204,6 +216,7 @@
         const markPickedUpBtn = document.getElementById('markPickedUpBtn');
         const saveChangesBtn = document.getElementById('saveChangesBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
 
         /**
          * Formats a date string from ISO (YYYY-MM-DD) to M/D/YY.
@@ -217,41 +230,92 @@
         }
 
         /**
-         * Initializes the bins array from localStorage or creates default empty bins.
+         * Fetches bin data from the Google Sheet via Apps Script.
          */
-        function loadBins() {
-            const storedBins = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (storedBins) {
-                bins = JSON.parse(storedBins);
-            } else {
-                // Initialize all bins as empty
+        async function fetchBinsFromSheet() {
+            loadingIndicator.classList.remove('hidden');
+            try {
+                if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
+                    console.warn("Google Apps Script URL not set. Using default empty bins.");
+                    alert("Please deploy your Google Apps Script and update 'GOOGLE_APPS_SCRIPT_WEB_APP_URL' in the code.");
+                    return initializeDefaultBins();
+                }
+
+                const response = await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL + '?action=read');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log("Data fetched from Google Sheet:", data);
+
+                const fetchedBins = {};
+                if (data && data.length > 0) {
+                    // Assuming data is an array of objects like:
+                    // { 'Bin ID': 'bin-1', 'Name': 'Item A', 'Date': '2023-01-01', 'isOccupied': 'TRUE' }
+                    data.forEach(row => {
+                        const binId = row['Bin ID'];
+                        if (binId) {
+                            fetchedBins[binId] = {
+                                name: row['Name'] || '',
+                                date: row['Date'] || '',
+                                isOccupied: (row['isOccupied'] || '').toLowerCase() === 'true'
+                            };
+                        }
+                    });
+                }
+
+                // Initialize any missing bins if the sheet doesn't have all 18 entries
                 for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
-                    bins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
+                    const id = `bin-${i}`;
+                    if (!fetchedBins[id]) {
+                        fetchedBins[id] = { name: '', date: '', isOccupied: false };
+                    }
                 }
                 for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
-                    bins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
+                    const id = `bin-large-${i}`;
+                    if (!fetchedBins[id]) {
+                        fetchedBins[id] = { name: '', date: '', isOccupied: false };
+                    }
                 }
-                saveBins(); // Save the initial empty state
+
+                bins = fetchedBins;
+                renderBins();
+
+            } catch (error) {
+                console.error("Error fetching bins from sheet:", error);
+                alert("Error loading bin data from Google Sheet. Check console for details.");
+                // Fallback to default empty bins if fetching fails
+                initializeDefaultBins();
+            } finally {
+                loadingIndicator.classList.add('hidden');
             }
         }
 
         /**
-         * Saves the current bins array to localStorage.
+         * Initializes all bins as empty if no data is loaded (e.g., on first run or error).
          */
-        function saveBins() {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(bins));
+        function initializeDefaultBins() {
+            const defaultBins = {};
+            for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
+                defaultBins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
+            }
+            for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
+                defaultBins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
+            }
+            bins = defaultBins;
+            renderBins();
+            loadingIndicator.classList.add('hidden');
         }
+
 
         /**
          * Renders all bin elements based on the current `bins` data.
          * Clears existing bins and re-appends them to ensure UI is up-to-date.
          */
         function renderBins() {
-            // Clear existing bins
             smallBinsContainer.innerHTML = '';
             largeBinsContainer.innerHTML = '';
 
-            // Render small bins
             for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
                 const binId = `bin-${i}`;
                 const binData = bins[binId];
@@ -259,10 +323,8 @@
                 smallBinsContainer.appendChild(binElement);
             }
 
-            // Render large bins
             for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
                 const binId = `bin-large-${i}`;
-                // Calculate the sequential bin number for large bins
                 const sequentialBinNumber = TOTAL_SMALL_BINS + i;
                 const binData = bins[binId];
                 const binElement = createBinElement(binId, `Bin ${sequentialBinNumber}`, binData, 'bin-large');
@@ -272,8 +334,8 @@
 
         /**
          * Creates a single bin DOM element.
-         * @param {string} id - The unique ID for the bin (e.g., 'bin-1', 'bin-large-1').
-         * @param {string} displayNum - The number to display on the bin (e.g., 'Bin 1', 'Bin 16').
+         * @param {string} id - The unique ID for the bin.
+         * @param {string} displayNum - The number to display on the bin.
          * @param {object} data - The bin's data {name, date, isOccupied}.
          * @param {string} sizeClass - 'bin-small' or 'bin-large' for styling.
          * @returns {HTMLElement} The created bin div element.
@@ -283,7 +345,6 @@
             binDiv.id = id;
             binDiv.className = `bin ${sizeClass} ${data.isOccupied ? 'occupied' : 'empty'}`;
 
-            // Adjust content based on occupied state and new layout/styling requests
             const contentHTML = data.isOccupied ?
                 `<div class="flex flex-col items-start w-full px-4 text-left">
                     <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
@@ -292,7 +353,6 @@
                 </div>` :
                 `<div class="flex flex-col items-start w-full px-4 text-left">
                     <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
-                    <!-- No "Empty" text if bin is empty -->
                 </div>`;
 
             binDiv.innerHTML = contentHTML;
@@ -306,23 +366,21 @@
          */
         function openModal(binId) {
             currentBinId = binId;
-            const binData = bins[binId];
+            const binData = bins[binId] || { name: '', date: '', isOccupied: false };
 
-            // Determine if it's a small or large bin to display correctly in modal
             const binNumberText = binId.startsWith('bin-large')
-                ? `Bin ${TOTAL_SMALL_BINS + parseInt(binId.split('-')[2])}` // Corrected for sequential numbering
+                ? `Bin ${TOTAL_SMALL_BINS + parseInt(binId.split('-')[2])}`
                 : `Bin ${binId.split('-')[1]}`;
 
             modalBinNumberInput.value = binNumberText;
             modalNameInput.value = binData.name;
-            modalDateInput.value = binData.date; // Date input should always showWHEREAS-MM-DD
+            modalDateInput.value = binData.date;
 
-            // Animate modal in
-            modalOverlay.classList.remove('hidden'); // Show the full overlay
+            modalOverlay.classList.remove('hidden');
             setTimeout(() => {
                 modalContent.classList.remove('opacity-0', 'scale-95');
                 modalContent.classList.add('opacity-100', 'scale-100');
-            }, 10); // Small delay to allow 'display: block' to apply before transition
+            }, 10);
         }
 
         /**
@@ -332,20 +390,62 @@
             modalContent.classList.remove('opacity-100', 'scale-100');
             modalContent.classList.add('opacity-0', 'scale-95');
             setTimeout(() => {
-                modalOverlay.classList.add('hidden'); // Hide the full overlay
-                currentBinId = null; // Clear current bin ID
-            }, 300); // Match transition duration
+                modalOverlay.classList.add('hidden');
+                currentBinId = null;
+            }, 300);
+        }
+
+        /**
+         * Updates bin data in the Google Sheet via Apps Script.
+         * @param {string} binId - The ID of the bin to update.
+         * @param {object} data - The new data for the bin.
+         */
+        async function updateBinInSheet(binId, data) {
+            loadingIndicator.classList.remove('hidden');
+            try {
+                if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
+                     alert("Google Apps Script URL not set. Cannot save data.");
+                     return;
+                }
+                const payload = {
+                    action: 'write',
+                    binId: binId,
+                    name: data.name,
+                    date: data.date,
+                    isOccupied: data.isOccupied
+                };
+
+                const response = await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Required for simple POST requests from Apps Script
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                // Since we use no-cors, we can't check response.ok or read response.json()
+                // We'll rely on the Apps Script to confirm success (or check the sheet directly)
+                console.log(`Update request sent for bin ${binId}.`);
+                // Re-fetch data to reflect changes from the sheet
+                await fetchBinsFromSheet();
+
+            } catch (error) {
+                console.error("Error updating bin in sheet:", error);
+                alert("Error saving data to Google Sheet. Check console for details.");
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
         }
 
         /**
          * Handles the "Mark as Picked Up" action.
          * Clears bin data and updates UI.
          */
-        function markAsPickedUp() {
+        async function markAsPickedUp() {
             if (currentBinId) {
-                bins[currentBinId] = { name: '', date: '', isOccupied: false };
-                saveBins();
-                renderBins();
+                const emptyBinData = { name: '', date: '', isOccupied: false };
+                await updateBinInSheet(currentBinId, emptyBinData);
                 closeModal();
             }
         }
@@ -354,23 +454,22 @@
          * Handles saving changes from the modal.
          * Updates bin data and UI.
          */
-        function saveChanges() {
+        async function saveChanges() {
             if (currentBinId) {
                 const newName = modalNameInput.value.trim();
                 const newDate = modalDateInput.value;
 
-                if (newName || newDate) { // Bin is occupied if either name or date is entered
-                    bins[currentBinId] = {
+                let newBinData;
+                if (newName || newDate) {
+                    newBinData = {
                         name: newName,
                         date: newDate,
                         isOccupied: true
                     };
-                } else { // If both are empty, bin is considered empty
-                    bins[currentBinId] = { name: '', date: '', isOccupied: false };
+                } else {
+                    newBinData = { name: '', date: '', isOccupied: false };
                 }
-
-                saveBins();
-                renderBins();
+                await updateBinInSheet(currentBinId, newBinData);
                 closeModal();
             }
         }
@@ -382,15 +481,14 @@
 
         // Close modal when clicking outside the content (on the overlay)
         modalOverlay.addEventListener('click', (event) => {
-            if (event.target === modalOverlay) { // Only close if clicking the overlay itself
+            if (event.target === modalOverlay) {
                 closeModal();
             }
         });
 
         // Initialize the app on DOM content loaded
         document.addEventListener('DOMContentLoaded', () => {
-            loadBins();
-            renderBins();
+            fetchBinsFromSheet(); // Fetch data from Google Sheet on app load
         });
     </script>
 </body>
