@@ -258,7 +258,8 @@
                             fetchedBins[binId] = {
                                 name: row['Name'] || '',
                                 date: row['Date'] || '',
-                                isOccupied: (row['isOccupied'] || '').toLowerCase() === 'true'
+                                // Fix: Explicitly convert to string before toLowerCase()
+                                isOccupied: String(row['isOccupied'] || '').toLowerCase() === 'true'
                             };
                         }
                     });
