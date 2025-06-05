@@ -22,7 +22,7 @@
             --color-black-solid: #1A1A1A; /* Near black for strong contrast elements */
 
             --color-border-light: #E0E0E0; /* Light grey for subtle borders */
-            --color-modal-overlay: rgba(0, 0, 0, 0.6); /* Slightly lighter overlay */
+            --color-modal-overlay-bg: rgba(0, 0, 0, 0.85); /* Increased opacity for a more solid background */
             --color-date-text: #9E9E9E; /* Medium grey for dates */
         }
 
@@ -43,7 +43,11 @@
 
         .border-primary-orange { border-color: var(--color-primary-orange); }
         .border-border-light { border-color: var(--color-border-light); }
-        .modal-overlay { background-color: var(--color-modal-overlay); }
+
+        /* Moved modal overlay background to its dedicated element */
+        #modalOverlay {
+            background-color: var(--color-modal-overlay-bg);
+        }
 
         /* Custom font */
         body {
@@ -93,10 +97,11 @@
         /* Modal specific styles */
         .modal-content-box {
             /* Now using rounded-full for the modal content box */
+            /* Constrained width for popup feel */
             @apply bg-app-background text-text-dark p-6 sm:p-10 rounded-full shadow-2xl;
+            width: 90%; /* Max 90% of parent width */
+            max-width: 500px; /* Maximum width for larger screens */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Stronger shadow for modal */
-            width: 90%;
-            max-width: 500px;
         }
 
         /* Main app container rounding */
@@ -142,8 +147,9 @@
         </section>
     </div>
 
-    <!-- Bin Details Modal -->
-    <div id="binModal" class="fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50 hidden">
+    <!-- Bin Details Modal (Overlay) -->
+    <div id="modalOverlay" class="fixed inset-0 flex items-center justify-center p-4 z-50 hidden">
+        <!-- Modal Content Box -->
         <div class="modal-content-box transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
             <h2 class="text-3xl sm:text-4xl font-bold mb-8 text-center text-black-solid">Bin Details</h2>
 
@@ -189,7 +195,8 @@
         // Get DOM elements
         const smallBinsContainer = document.querySelector('main');
         const largeBinsContainer = document.querySelector('section');
-        const binModal = document.getElementById('binModal');
+        // Renamed binModal to modalOverlay
+        const modalOverlay = document.getElementById('modalOverlay');
         const modalContent = document.getElementById('modalContent');
         const modalBinNumberInput = document.getElementById('modalBinNumber');
         const modalNameInput = document.getElementById('modalName');
@@ -311,7 +318,7 @@
             modalDateInput.value = binData.date; // Date input should always showWHEREAS-MM-DD
 
             // Animate modal in
-            binModal.classList.remove('hidden');
+            modalOverlay.classList.remove('hidden'); // Show the full overlay
             setTimeout(() => {
                 modalContent.classList.remove('opacity-0', 'scale-95');
                 modalContent.classList.add('opacity-100', 'scale-100');
@@ -325,7 +332,7 @@
             modalContent.classList.remove('opacity-100', 'scale-100');
             modalContent.classList.add('opacity-0', 'scale-95');
             setTimeout(() => {
-                binModal.classList.add('hidden');
+                modalOverlay.classList.add('hidden'); // Hide the full overlay
                 currentBinId = null; // Clear current bin ID
             }, 300); // Match transition duration
         }
@@ -374,8 +381,8 @@
         closeModalBtn.addEventListener('click', closeModal);
 
         // Close modal when clicking outside the content (on the overlay)
-        binModal.addEventListener('click', (event) => {
-            if (event.target === binModal) {
+        modalOverlay.addEventListener('click', (event) => {
+            if (event.target === modalOverlay) { // Only close if clicking the overlay itself
                 closeModal();
             }
         });
