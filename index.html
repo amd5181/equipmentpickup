@@ -9,41 +9,56 @@
     <style>
         /* Custom Tailwind Configuration for theme colors and fonts */
         :root {
-            --color-primary-orange: #FF8C00; /* DarkOrange */
-            --color-secondary-orange: #FFA500; /* Orange */
-            --color-white: #FFFFFF;
-            --color-black: #1A1A1A; /* Slightly off-black for softer look */
-            --color-dark-grey: #333333;
-            --color-light-grey: #E0E0E0;
+            --color-page-background: #E8E8E8; /* Slightly darker grey for better contrast */
+            --color-app-background: #FFFFFF;   /* Pure white for the main app container */
+            --color-bin-background: #FFFFFF;   /* White for all bins */
+
+            /* Darker Orange Palette */
+            --color-primary-orange: #B35200;   /* A deep, rich orange for accents and glows */
+            --color-secondary-orange: #CC6600; /* A slightly brighter but still dark orange for hover states */
+
+            --color-text-dark: #333333; /* Dark grey for primary text */
+            --color-text-light: #666666; /* Lighter grey for secondary text */
+            --color-black-solid: #1A1A1A; /* Near black for strong contrast elements */
+
+            --color-border-light: #E0E0E0; /* Light grey for subtle borders */
+            --color-modal-overlay: rgba(0, 0, 0, 0.6); /* Slightly lighter overlay */
+            --color-date-text: #9E9E9E; /* Medium grey for dates */
         }
 
-        /* Applying custom colors to Tailwind */
+        /* Applying custom colors to Tailwind classes */
+        .bg-page-background { background-color: var(--color-page-background); }
+        .bg-app-background { background-color: var(--color-app-background); }
+        .bg-bin-background { background-color: var(--color-bin-background); }
         .bg-primary-orange { background-color: var(--color-primary-orange); }
         .bg-secondary-orange { background-color: var(--color-secondary-orange); }
-        .bg-white { background-color: var(--color-white); }
-        .bg-black { background-color: var(--color-black); }
-        .bg-dark-grey { background-color: var(--color-dark-grey); }
-        .bg-light-grey { background-color: var(--color-light-grey); }
+        .bg-black-solid { background-color: var(--color-black-solid); }
 
         .text-primary-orange { color: var(--color-primary-orange); }
-        .text-white { color: var(--color-white); }
-        .text-black { color: var(--color-black); }
-        .text-dark-grey { color: var(--color-dark-grey); }
+        .text-text-dark { color: var(--color-text-dark); }
+        .text-text-light { color: var(--color-text-light); }
+        .text-white { color: #FFFFFF; } /* Keep explicit white for contrast on dark buttons */
+        .text-date-text { color: var(--color-date-text); }
+
 
         .border-primary-orange { border-color: var(--color-primary-orange); }
-        .border-black { border-color: var(--color-black); }
-        .border-light-grey { border-color: var(--color-light-grey); }
+        .border-border-light { border-color: var(--color-border-light); }
+        .modal-overlay { background-color: var(--color-modal-overlay); }
 
         /* Custom font */
         body {
             font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased; /* Smoother text rendering */
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Specific styles for bin responsiveness */
+        /* Specific styles for bin responsiveness and improved appearance */
         .bin {
-            @apply flex flex-col items-center justify-center text-center p-2 sm:p-4 rounded-lg cursor-pointer transition-all duration-200 ease-in-out shadow-lg;
+            /* Now using rounded-full for individual bins */
+            @apply flex flex-col p-3 sm:p-5 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background; /* Increased duration for smoother animation */
             min-height: 120px; /* Minimum height for touch target */
             height: 100%; /* Ensure bins fill their grid area */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Subtle default shadow */
         }
 
         .bin-small {
@@ -55,24 +70,45 @@
             min-height: 180px; /* Larger minimum height for large bins */
         }
 
-        /* Occupied bin state */
+        /* Occupied bin state - now uses thicker orange outline and subtle orange glow */
         .bin.occupied {
-            @apply bg-primary-orange text-white;
+            @apply border-4 border-primary-orange text-text-dark; /* Thicker border */
+            /* Added orange glow effect */
+            box-shadow: 0 0 15px rgba(179, 82, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.12);
         }
 
         /* Empty bin state */
         .bin.empty {
-            @apply bg-white text-black border-2 border-light-grey;
+            @apply text-text-light;
         }
 
-        /* Hover effect for bins */
+        /* Hover effect for bins - more pronounced animation and glow */
         .bin:hover {
-            @apply transform scale-105 shadow-xl;
+            @apply transform scale-[1.07] shadow-2xl; /* Stronger scale, more distinct shadow */
+            border-color: var(--color-primary-orange); /* Keep primary orange border on hover */
+            /* Added orange glow on hover */
+            box-shadow: 0 0 20px rgba(179, 82, 0, 0.6), 0 10px 25px rgba(0, 0, 0, 0.2);
         }
 
         /* Modal specific styles */
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.7);
+        .modal-content-box {
+            /* Now using rounded-full for the modal content box */
+            @apply bg-app-background text-text-dark p-6 sm:p-10 rounded-full shadow-2xl;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Stronger shadow for modal */
+            width: 90%;
+            max-width: 500px;
+        }
+
+        /* Main app container rounding */
+        #app {
+            /* Reverted to a more subtle rounding for the main container */
+            @apply rounded-3xl;
+        }
+
+        /* Header rounding - adjusted for app container */
+        #app header {
+             /* Rounded-full to match app container's top curvature */
+            @apply rounded-t-3xl; /* Changed to rounded-t-3xl to align with app container's top rounding */
         }
 
         /* Hide scrollbar for kiosk mode, if present */
@@ -81,53 +117,59 @@
         }
     </style>
 </head>
-<body class="bg-black text-white min-h-screen flex flex-col p-4 sm:p-8">
+<body class="bg-page-background text-text-dark min-h-screen flex flex-col p-4 sm:p-8">
     <!-- Main Application Container -->
-    <div id="app" class="flex flex-col flex-grow w-full max-w-7xl mx-auto rounded-xl shadow-2xl bg-dark-grey overflow-hidden">
+    <div id="app" class="flex flex-col flex-grow w-full max-w-7xl mx-auto rounded-3xl shadow-2xl bg-app-background overflow-hidden">
         <!-- Header -->
-        <header class="bg-black py-4 px-6 rounded-t-xl text-center shadow-lg">
-            <h1 class="text-3xl sm:text-4xl font-bold text-primary-orange">Equipment Pickup Station</h1>
+        <header class="bg-app-background py-5 px-6 rounded-t-3xl text-center shadow-md">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-black-solid tracking-tight mb-2">
+                <span class="text-primary-orange">Pickup</span> Station
+            </h1>
+            <!-- Subtitle message: Increased font size to text-xl sm:text-2xl -->
+            <p class="text-xl sm:text-2xl text-text-light mb-4 leading-relaxed">
+                Once you receive your equipment, please select your name and mark it as picked up. Thank you!
+            </p>
         </header>
 
         <!-- Bin Grid Container -->
-        <main class="flex-grow p-4 sm:p-8 grid gap-4 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
+        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
             <!-- Bins will be dynamically inserted here by JavaScript -->
         </main>
 
         <!-- Large Bins Row -->
-        <section class="p-4 sm:p-8 pt-0 grid gap-4 grid-rows-1 grid-cols-3 auto-rows-fr">
+        <section class="p-6 sm:p-10 pt-0 grid gap-6 grid-rows-1 grid-cols-3 auto-rows-fr">
             <!-- Large bins will be dynamically inserted here by JavaScript -->
         </section>
     </div>
 
     <!-- Bin Details Modal -->
-    <div id="binModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden modal-overlay">
-        <div class="bg-white text-black p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg md:max-w-xl lg:max-w-2xl transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
-            <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center text-primary-orange">Bin Details</h2>
+    <div id="binModal" class="fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50 hidden">
+        <div class="modal-content-box transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-8 text-center text-black-solid">Bin Details</h2>
 
-            <div class="space-y-4 mb-6">
+            <div class="space-y-6 mb-8">
                 <div>
-                    <label for="modalBinNumber" class="block text-dark-grey text-sm sm:text-base font-medium mb-1">Bin Number:</label>
-                    <input type="text" id="modalBinNumber" class="w-full p-3 border border-light-grey rounded-lg bg-light-grey text-black font-semibold cursor-not-allowed" readonly>
+                    <label for="modalBinNumber" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Bin Number:</label>
+                    <input type="text" id="modalBinNumber" class="w-full p-4 border border-border-light rounded-full bg-page-background text-text-dark font-semibold cursor-not-allowed focus:outline-none" readonly>
                 </div>
                 <div>
-                    <label for="modalName" class="block text-dark-grey text-sm sm:text-base font-medium mb-1">Name:</label>
-                    <input type="text" id="modalName" class="w-full p-3 border border-light-grey rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange" placeholder="Enter name">
+                    <label for="modalName" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Name:</label>
+                    <input type="text" id="modalName" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark placeholder-text-light" placeholder="Enter name">
                 </div>
                 <div>
-                    <label for="modalDate" class="block text-dark-grey text-sm sm:text-base font-medium mb-1">Date:</label>
-                    <input type="date" id="modalDate" class="w-full p-3 border border-light-grey rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange">
+                    <label for="modalDate" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Date:</label>
+                    <input type="date" id="modalDate" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark">
                 </div>
             </div>
 
             <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <button id="markPickedUpBtn" class="flex-1 bg-primary-orange text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-secondary-orange transition-colors duration-200 shadow-md">
+                <button id="markPickedUpBtn" class="flex-1 bg-primary-orange text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:bg-secondary-orange transition-colors duration-200 shadow-md">
                     Mark as Picked Up
                 </button>
-                <button id="saveChangesBtn" class="flex-1 bg-dark-grey text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-black transition-colors duration-200 shadow-md">
+                <button id="saveChangesBtn" class="flex-1 bg-black-solid text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:opacity-90 transition-opacity duration-200 shadow-md">
                     Save Changes
                 </button>
-                <button id="closeModalBtn" class="flex-1 bg-light-grey text-black py-3 px-6 rounded-lg font-bold text-lg hover:bg-dark-grey hover:text-white transition-colors duration-200 shadow-md">
+                <button id="closeModalBtn" class="flex-1 bg-border-light text-text-dark py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:bg-page-background transition-colors duration-200 shadow-md">
                     Close
                 </button>
             </div>
@@ -155,6 +197,17 @@
         const markPickedUpBtn = document.getElementById('markPickedUpBtn');
         const saveChangesBtn = document.getElementById('saveChangesBtn');
         const closeModalBtn = document.getElementById('closeModalBtn');
+
+        /**
+         * Formats a date string from ISO (YYYY-MM-DD) to M/D/YY.
+         * @param {string} dateString - The date string in ISO (YYYY-MM-DD) format.
+         * @returns {string} The formatted date string (M/D/YY) or empty string if input is empty.
+         */
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const [year, month, day] = dateString.split('-');
+            return `${parseInt(month)}/${parseInt(day)}/${year.slice(-2)}`;
+        }
 
         /**
          * Initializes the bins array from localStorage or creates default empty bins.
@@ -202,8 +255,10 @@
             // Render large bins
             for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
                 const binId = `bin-large-${i}`;
+                // Calculate the sequential bin number for large bins
+                const sequentialBinNumber = TOTAL_SMALL_BINS + i;
                 const binData = bins[binId];
-                const binElement = createBinElement(binId, `Large Bin ${i}`, binData, 'bin-large');
+                const binElement = createBinElement(binId, `Bin ${sequentialBinNumber}`, binData, 'bin-large');
                 largeBinsContainer.appendChild(binElement);
             }
         }
@@ -211,7 +266,7 @@
         /**
          * Creates a single bin DOM element.
          * @param {string} id - The unique ID for the bin (e.g., 'bin-1', 'bin-large-1').
-         * @param {string} displayNum - The number to display on the bin (e.g., 'Bin 1', 'Large Bin 1').
+         * @param {string} displayNum - The number to display on the bin (e.g., 'Bin 1', 'Bin 16').
          * @param {object} data - The bin's data {name, date, isOccupied}.
          * @param {string} sizeClass - 'bin-small' or 'bin-large' for styling.
          * @returns {HTMLElement} The created bin div element.
@@ -220,10 +275,20 @@
             const binDiv = document.createElement('div');
             binDiv.id = id;
             binDiv.className = `bin ${sizeClass} ${data.isOccupied ? 'occupied' : 'empty'}`;
-            binDiv.innerHTML = `
-                <span class="text-xl sm:text-2xl font-bold mb-2">${displayNum}</span>
-                ${data.isOccupied ? `<p class="text-sm sm:text-base truncate w-full px-1">${data.name}</p><p class="text-xs sm:text-sm">${data.date}</p>` : `<p class="text-sm sm:text-base text-dark-grey">Empty</p>`}
-            `;
+
+            // Adjust content based on occupied state and new layout/styling requests
+            const contentHTML = data.isOccupied ?
+                `<div class="flex flex-col items-start w-full px-4 text-left">
+                    <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
+                    <p class="text-lg sm:text-xl font-bold break-words w-full">${data.name}</p>
+                    <p class="text-sm sm:text-base italic text-date-text mt-1">${formatDate(data.date)}</p>
+                </div>` :
+                `<div class="flex flex-col items-start w-full px-4 text-left">
+                    <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
+                    <!-- No "Empty" text if bin is empty -->
+                </div>`;
+
+            binDiv.innerHTML = contentHTML;
             binDiv.addEventListener('click', () => openModal(id));
             return binDiv;
         }
@@ -236,14 +301,14 @@
             currentBinId = binId;
             const binData = bins[binId];
 
-            // Determine if it's a small or large bin to display correctly
+            // Determine if it's a small or large bin to display correctly in modal
             const binNumberText = binId.startsWith('bin-large')
-                ? `Large Bin ${binId.split('-')[2]}`
+                ? `Bin ${TOTAL_SMALL_BINS + parseInt(binId.split('-')[2])}` // Corrected for sequential numbering
                 : `Bin ${binId.split('-')[1]}`;
 
             modalBinNumberInput.value = binNumberText;
             modalNameInput.value = binData.name;
-            modalDateInput.value = binData.date;
+            modalDateInput.value = binData.date; // Date input should always showWHEREAS-MM-DD
 
             // Animate modal in
             binModal.classList.remove('hidden');
