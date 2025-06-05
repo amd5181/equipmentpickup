@@ -101,12 +101,12 @@
 
         /* Main app container rounding */
         #app {
-            @apply rounded-3xl;
+            @apply rounded-3xl relative;
         }
 
         /* Header rounding - adjusted for app container */
         #app header {
-            @apply rounded-t-3xl;
+            @apply rounded-t-3xl relative; /* Ensure header is relative for absolute positioning of children */
         }
 
         /* Hide scrollbar for kiosk mode, if present */
@@ -131,10 +131,8 @@
 
         /* Discrete Refresh Counter styles */
         #refreshCounter {
-            /* No background, no padding, no shadow, small text, light gray */
-            @apply text-text-light text-sm font-normal;
-            right: 1rem; /* Adjust position as needed */
-            top: 1rem;   /* Adjust position as needed */
+            /* Absolute relative to header, smallest font, light color, italic */
+            @apply text-text-light text-xs italic absolute right-4 top-4 z-40;
         }
     </style>
 </head>
@@ -142,17 +140,24 @@
     <!-- Main Application Container -->
     <div id="app" class="flex flex-col flex-grow w-full max-w-7xl mx-auto rounded-3xl shadow-2xl bg-app-background overflow-hidden">
         <!-- Header -->
-        <header class="bg-app-background py-5 px-6 rounded-t-3xl text-center shadow-md relative">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-black-solid tracking-tight mb-2">
-                <span class="text-primary-orange">Pickup</span> Station
+        <header class="bg-app-background py-5 px-6 rounded-t-3xl shadow-md relative">
+            <!-- Refresh Counter -->
+            <div id="refreshCounter">
+                Refreshing in 30s
+            </div>
+
+            <!-- Adjusted Title Size and Color with Images (No rounded-full, smaller, more space) -->
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-center flex items-center justify-center space-x-3">
+                <img src="https://companieslogo.com/img/orig/ALRM-95c12e24.png?t=1720244490" alt="Alarm.com Logo" class="h-5 sm:h-6 inline-block align-middle" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/333333?text=Logo'">
+                <span> <!-- New span to group "Pickup Station" text -->
+                    <span class="text-primary-orange">Pickup</span> <span class="text-text-light">Station</span>
+                </span>
+                <img src="https://companieslogo.com/img/orig/ALRM-95c12e24.png?t=1720244490" alt="Alarm.com Logo" class="h-5 sm:h-6 inline-block align-middle" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/333333?text=Logo'">
             </h1>
-            <p class="text-xl sm:text-2xl text-text-light mb-4 leading-relaxed">
+            <!-- Adjusted Subtitle Size and Color -->
+            <p class="text-2xl sm:text-3xl mb-4 leading-relaxed text-center text-black-solid">
                 Once you receive your equipment, please select your name and mark it as picked up. Thank you!
             </p>
-            <!-- Refresh Counter -->
-            <div id="refreshCounter" class="absolute">
-                Refreshing in 10s
-            </div>
         </header>
 
         <!-- Loading Indicator -->
@@ -194,13 +199,14 @@
             </div>
 
             <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <button id="markPickedUpBtn" class="flex-1 bg-primary-orange text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:bg-secondary-orange transition-colors duration-200 shadow-md">
-                    Mark as Picked Up
-                </button>
+                <!-- Reordered buttons: Save, Mark as Picked Up, Close -->
                 <button id="saveChangesBtn" class="flex-1 bg-black-solid text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:opacity-90 transition-opacity duration-200 shadow-md">
                     Save Changes
                 </button>
-                <button id="closeModalBtn" class="flex-1 bg-border-light text-text-dark py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:bg-page-background transition-colors duration-200 shadow-md">
+                <button id="markPickedUpBtn" class="flex-1 bg-primary-orange text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:bg-secondary-orange transition-colors duration-200 shadow-md">
+                    Mark as Picked Up
+                </button>
+                <button id="closeModalBtn" class="flex-1 bg-black-solid text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:opacity-90 transition-opacity duration-200 shadow-md">
                     Close
                 </button>
             </div>
@@ -212,7 +218,7 @@
 
         let bins = {}; // Stores bin data
         let currentBinId = null;
-        let refreshCountdown = 10; // Initial countdown value
+        let refreshCountdown = 30; // Initial countdown value, set to 30 seconds
         let countdownInterval; // To store the interval ID for clearing
         let isInitialLoad = true; // Flag to track initial fetch
 
@@ -248,8 +254,8 @@
          */
         function startRefreshCountdown() {
             clearInterval(countdownInterval); // Clear any existing interval
-            refreshCountdown = 10; // Reset countdown
-            refreshCounterDisplay.textContent = `Refreshing in ${refreshCountdown}s`;
+            refreshCountdown = 30; // Reset countdown to 30 seconds
+            refreshCounterDisplay.textContent = `${refreshCountdown}s`;
 
             countdownInterval = setInterval(() => {
                 refreshCountdown--;
@@ -257,7 +263,7 @@
                     clearInterval(countdownInterval);
                     fetchBinsFromSheet(); // Trigger refresh when countdown reaches 0
                 } else {
-                    refreshCounterDisplay.textContent = `Refreshing in ${refreshCountdown}s`;
+                    refreshCounterDisplay.textContent = `${refreshCountdown}s`;
                 }
             }, 1000); // Update every second
         }
@@ -383,7 +389,7 @@
             // Get references to inner content elements
             const binNameEl = binElement.querySelector(`#bin-name-${binId}`);
             const binDateEl = binElement.querySelector(`#bin-date-${binId}`);
-            const binNumberEl = binElement.querySelector(`#bin-number-${binId}`);
+            const binNumberEl = binElement.querySelector(`#bin-number-${binId}`); // Added selection for bin number element
 
             // Update bin number (shouldn't change, but for completeness)
             if (binNumberEl && binNumberEl.textContent !== displayNum) {
@@ -490,7 +496,7 @@
 
             modalBinNumberInput.value = binNumberText;
             modalNameInput.value = binData.name;
-            modalDateInput.value = binData.date;
+            modalDateInput.value = binData.date; // This value is already inYYYY-MM-DD from Apps Script
 
             modalOverlay.classList.remove('hidden');
             setTimeout(() => {
@@ -513,6 +519,7 @@
 
         /**
          * Updates bin data in the Google Sheet via Apps Script.
+         * This function now just sends the update request in the background.
          * @param {string} binId - The ID of the bin to update.
          * @param {object} data - The new data for the bin.
          */
@@ -527,7 +534,7 @@
                     binId: binId,
                     name: data.name,
                     date: data.date,
-                    isOccupied: data.isOccupied
+                    isOccupied: data.isOccupied // This value is still sent to Apps Script, but Apps Script will ignore it for existing rows
                 };
 
                 await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
@@ -562,8 +569,6 @@
 
                 // Send update to sheet in the background
                 await updateBinInSheet(currentBinId, emptyBinData);
-
-                // No need for setTimeout(fetchBinsFromSheet, 2000) anymore as auto-refresh handles it
             }
         }
 
@@ -581,7 +586,7 @@
                     newBinData = {
                         name: newName,
                         date: newDate,
-                        isOccupied: true
+                        isOccupied: true // This value is still sent to Apps Script, but Apps Script will ignore it for existing rows
                     };
                 } else {
                     newBinData = { name: '', date: '', isOccupied: false };
@@ -594,8 +599,6 @@
 
                 // Send update to sheet in the background
                 await updateBinInSheet(currentBinId, newBinData);
-
-                // No need for setTimeout(fetchBinsFromSheet, 2000) anymore as auto-refresh handles it
             }
         }
 
