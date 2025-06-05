@@ -128,6 +128,14 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Discrete Refresh Counter styles */
+        #refreshCounter {
+            /* No background, no padding, no shadow, small text, light gray */
+            @apply text-text-light text-sm font-normal;
+            right: 1rem; /* Adjust position as needed */
+            top: 1rem;   /* Adjust position as needed */
+        }
     </style>
 </head>
 <body class="bg-page-background text-text-dark min-h-screen flex flex-col p-4 sm:p-8">
@@ -142,7 +150,7 @@
                 Once you receive your equipment, please select your name and mark it as picked up. Thank you!
             </p>
             <!-- Refresh Counter -->
-            <div id="refreshCounter" class="absolute top-4 right-4 bg-primary-orange text-white text-lg font-bold px-3 py-1 rounded-full shadow-md">
+            <div id="refreshCounter" class="absolute">
                 Refreshing in 10s
             </div>
         </header>
@@ -206,6 +214,7 @@
         let currentBinId = null;
         let refreshCountdown = 10; // Initial countdown value
         let countdownInterval; // To store the interval ID for clearing
+        let isInitialLoad = true; // Flag to track initial fetch
 
         const TOTAL_SMALL_BINS = 15;
         const TOTAL_LARGE_BINS = 3;
@@ -276,17 +285,18 @@
          * After fetching, it updates the UI by calling updateBinsUI.
          */
         async function fetchBinsFromSheet() {
-            loadingIndicator.classList.remove('hidden'); // Show loading indicator
+            if (isInitialLoad) {
+                loadingIndicator.classList.remove('hidden'); // Show loading indicator only on initial load
+            }
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
                     console.warn("Google Apps Script URL not set. Cannot fetch data.");
                     alert("Please deploy your Google Apps Script and update 'GOOGLE_APPS_SCRIPT_WEB_APP_URL' in the code.");
-                    // Fallback to default state for UI, not just empty
                     const defaultBins = {};
                     for (let i = 1; i <= TOTAL_SMALL_BINS; i++) defaultBins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
                     for (let i = 1; i <= TOTAL_LARGE_BINS; i++) defaultBins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
-                    bins = defaultBins; // Update global bins object
-                    updateBinsUI(); // Update UI with default
+                    bins = defaultBins;
+                    updateBinsUI();
                     return;
                 }
 
@@ -311,7 +321,6 @@
                     });
                 }
 
-                // Ensure all bins exist in the fetched data (if not, they are empty)
                 for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
                     const id = `bin-${i}`;
                     if (!fetchedBins[id]) {
@@ -325,16 +334,16 @@
                     }
                 }
 
-                bins = fetchedBins; // Update the global 'bins' object
+                bins = fetchedBins;
                 updateBinsUI(); // Update the UI based on the new 'bins' data
 
             } catch (error) {
                 console.error("Error fetching bins from sheet:", error);
                 alert("Error loading bin data from Google Sheet. Check console for details.");
-                // No specific default bins if fetch fails, just keep current UI state.
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
                 startRefreshCountdown(); // Restart countdown after fetch completes (success or failure)
+                isInitialLoad = false; // After the first load, set flag to false
             }
         }
 
@@ -360,7 +369,6 @@
         function updateSingleBinUI(binId, displayNum) {
             const binElement = document.getElementById(binId);
             if (!binElement) {
-                // This shouldn't happen if initializeBinElements is called correctly, but as a safeguard
                 console.error(`Bin element with ID ${binId} not found.`);
                 return;
             }
@@ -372,27 +380,38 @@
             const currentDate = binElement.dataset.date || '';
             const currentIsOccupied = binElement.dataset.isOccupied === 'true';
 
-            // Check if content has actually changed to avoid unnecessary DOM manipulation
+            // Get references to inner content elements
+            const binNameEl = binElement.querySelector(`#bin-name-${binId}`);
+            const binDateEl = binElement.querySelector(`#bin-date-${binId}`);
+            const binNumberEl = binElement.querySelector(`#bin-number-${binId}`);
+
+            // Update bin number (shouldn't change, but for completeness)
+            if (binNumberEl && binNumberEl.textContent !== displayNum) {
+                binNumberEl.textContent = displayNum;
+            }
+
+            // Check if name or date or occupied status has actually changed
             if (currentName !== binData.name || currentDate !== binData.date || currentIsOccupied !== binData.isOccupied) {
-                const contentHTML = binData.isOccupied ?
-                    `<div class="flex flex-col items-start w-full px-4 text-left">
-                        <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
-                        <p class="text-lg sm:text-xl font-bold break-words w-full">${binData.name}</p>
-                        <p class="text-sm sm:text-base italic text-date-text mt-1">${formatDate(binData.date)}</p>
-                    </div>` :
-                    `<div class="flex flex-col items-start w-full px-4 text-left">
-                        <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
-                    </div>`;
-
-                binElement.innerHTML = contentHTML;
-
-                // Update class based on occupancy
                 if (binData.isOccupied) {
-                    binElement.classList.add('occupied');
+                    // Update name and date if occupied
+                    if (binNameEl && binNameEl.textContent !== binData.name) {
+                        binNameEl.textContent = binData.name;
+                    }
+                    if (binDateEl && binDateEl.textContent !== formatDate(binData.date)) {
+                        binDateEl.textContent = formatDate(binData.date);
+                    }
+                    binNameEl.classList.remove('hidden'); // Show name and date
+                    binDateEl.classList.remove('hidden');
                     binElement.classList.remove('empty');
+                    binElement.classList.add('occupied');
                 } else {
-                    binElement.classList.add('empty');
+                    // Clear name and date if empty
+                    if (binNameEl) binNameEl.textContent = '';
+                    if (binDateEl) binDateEl.textContent = '';
+                    binNameEl.classList.add('hidden'); // Hide name and date
+                    binDateEl.classList.add('hidden');
                     binElement.classList.remove('occupied');
+                    binElement.classList.add('empty');
                 }
 
                 // Store current state in dataset for next comparison
@@ -413,19 +432,40 @@
         function createBinElement(id, displayNum, data, sizeClass) {
             const binDiv = document.createElement('div');
             binDiv.id = id;
+            // Initial class based on data
             binDiv.className = `bin ${sizeClass} ${data.isOccupied ? 'occupied' : 'empty'}`;
 
-            const contentHTML = data.isOccupied ?
-                `<div class="flex flex-col items-start w-full px-4 text-left">
-                    <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
-                    <p class="text-lg sm:text-xl font-bold break-words w-full">${data.name}</p>
-                    <p class="text-sm sm:text-base italic text-date-text mt-1">${formatDate(data.date)}</p>
-                </div>` :
-                `<div class="flex flex-col items-start w-full px-4 text-left">
-                    <p class="text-base sm:text-lg font-bold text-primary-orange mb-1">${displayNum}</p>
-                </div>`;
+            // Create inner elements with IDs for granular updates
+            const contentDiv = document.createElement('div');
+            contentDiv.className = "flex flex-col items-start w-full px-4 text-left";
 
-            binDiv.innerHTML = contentHTML;
+            const binNumberP = document.createElement('p');
+            binNumberP.id = `bin-number-${id}`; // Unique ID for bin number
+            binNumberP.className = "text-base sm:text-lg font-bold text-primary-orange mb-1";
+            binNumberP.textContent = displayNum;
+            contentDiv.appendChild(binNumberP);
+
+            const binNameP = document.createElement('p');
+            binNameP.id = `bin-name-${id}`; // Unique ID for name
+            binNameP.className = "text-lg sm:text-xl font-bold break-words w-full";
+            if (data.isOccupied) {
+                binNameP.textContent = data.name;
+            } else {
+                binNameP.classList.add('hidden'); // Hide if not occupied
+            }
+            contentDiv.appendChild(binNameP);
+
+            const binDateP = document.createElement('p');
+            binDateP.id = `bin-date-${id}`; // Unique ID for date
+            binDateP.className = "text-sm sm:text-base italic text-date-text mt-1";
+            if (data.isOccupied) {
+                binDateP.textContent = formatDate(data.date);
+            } else {
+                binDateP.classList.add('hidden'); // Hide if not occupied
+            }
+            contentDiv.appendChild(binDateP);
+
+            binDiv.appendChild(contentDiv);
             binDiv.addEventListener('click', () => openModal(id));
 
             // Store initial data in dataset for comparison during updates
