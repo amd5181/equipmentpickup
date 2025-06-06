@@ -58,7 +58,8 @@
 
         /* Specific styles for bin responsiveness and improved appearance */
         .bin {
-            @apply flex flex-col p-3 sm:p-5 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
+            /* Removed rounded-full from @apply; now handled directly in JS with rounded-xl */
+            @apply flex flex-col p-3 sm:p-5 cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
             min-height: 120px;
             height: 100%;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -93,13 +94,14 @@
 
         /* Modal specific styles */
         .modal-content-box {
-            @apply bg-app-background text-text-dark p-6 sm:p-10 rounded-full shadow-2xl;
+            /* Changed rounded-full to rounded-3xl here */
+            @apply bg-app-background text-text-dark p-6 sm:p-10 rounded-3xl shadow-2xl;
             width: 90%;
             max-width: 500px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
 
-        /* Main app container rounding */
+        /* Main app container rounding - kept at rounded-3xl */
         #app {
             @apply rounded-3xl relative;
         }
@@ -128,6 +130,17 @@
         #refreshCounter {
             /* Absolute relative to header, smallest font, light color, italic */
             @apply text-text-light text-xs italic absolute right-4 top-4 z-40;
+        }
+
+        /* Custom MessageBox styles */
+        #messageBoxOverlay {
+            background-color: var(--color-modal-overlay-bg);
+        }
+
+        .message-box-content {
+            @apply bg-app-background text-text-dark p-6 sm:p-10 rounded-3xl shadow-2xl;
+            width: 90%;
+            max-width: 400px;
         }
     </style>
 </head>
@@ -162,34 +175,36 @@
         </div>
 
         <!-- Bin Grid Container -->
-        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
+        <!-- Updated grid columns for better responsiveness -->
+        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-[repeat(auto-fit,minmax(180px,1fr))] auto-rows-fr">
             <!-- Bins will be dynamically inserted here by JavaScript -->
         </main>
 
         <!-- Large Bins Row -->
-        <section class="p-6 sm:p-10 pt-0 grid gap-6 grid-rows-1 grid-cols-3 auto-rows-fr">
+        <!-- Updated grid columns for better responsiveness -->
+        <section class="p-6 sm:p-10 pt-0 grid gap-6 grid-rows-1 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] auto-rows-fr">
             <!-- Large bins will be dynamically inserted here by JavaScript -->
         </section>
     </div>
 
     <!-- Bin Details Modal (Overlay) -->
-    <div id="modalOverlay" class="fixed inset-0 flex items-center justify-center p-4 z-50 hidden">
+    <div id="modalOverlay" class="fixed inset-0 flex items-center justify-center p-4 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <!-- Modal Content Box -->
         <div class="modal-content-box transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
-            <h2 class="text-3xl sm:text-4xl font-bold mb-8 text-center text-black-solid">Bin Details</h2>
+            <h2 id="modalTitle" class="text-3xl sm:text-4xl font-bold mb-8 text-center text-black-solid">Bin Details</h2>
 
             <div class="space-y-6 mb-8">
                 <div>
                     <label for="modalBinNumber" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Bin Number:</label>
-                    <input type="text" id="modalBinNumber" class="w-full p-4 border border-border-light rounded-full bg-page-background text-text-dark font-semibold cursor-not-allowed focus:outline-none" readonly>
+                    <input type="text" id="modalBinNumber" class="w-full p-4 border border-border-light rounded-xl bg-page-background text-text-dark font-semibold cursor-not-allowed focus:outline-none" readonly>
                 </div>
                 <div>
                     <label for="modalName" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Name:</label>
-                    <input type="text" id="modalName" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark placeholder-text-light" placeholder="Enter name">
+                    <input type="text" id="modalName" class="w-full p-4 border border-border-light rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark placeholder-text-light" placeholder="Enter name">
                 </div>
                 <div>
                     <label for="modalDate" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Date:</label>
-                    <input type="date" id="modalDate" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark">
+                    <input type="date" id="modalDate" class="w-full p-4 border border-border-light rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark">
                 </div>
             </div>
 
@@ -203,6 +218,19 @@
                 </button>
                 <button id="closeModalBtn" class="flex-1 bg-black-solid text-white py-4 px-6 rounded-full font-bold text-lg sm:text-xl hover:opacity-90 transition-opacity duration-200 shadow-md">
                     Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Message Box Modal (for alerts) -->
+    <div id="messageBoxOverlay" class="fixed inset-0 flex items-center justify-center p-4 z-50 hidden" role="alertdialog" aria-modal="true" aria-labelledby="messageBoxTitle">
+        <div class="message-box-content transform transition-all duration-300 scale-95 opacity-0" id="messageBoxContent">
+            <h3 id="messageBoxTitle" class="text-2xl sm:text-3xl font-bold mb-4 text-center text-black-solid"></h3>
+            <p id="messageBoxMessage" class="text-text-dark text-center mb-6"></p>
+            <div class="flex justify-center">
+                <button id="messageBoxOkBtn" class="bg-primary-orange text-white py-3 px-8 rounded-full font-bold text-lg hover:bg-secondary-orange transition-colors duration-200 shadow-md">
+                    OK
                 </button>
             </div>
         </div>
@@ -232,6 +260,47 @@
         const closeModalBtn = document.getElementById('closeModalBtn');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const refreshCounterDisplay = document.getElementById('refreshCounter');
+
+        // New elements for the custom message box
+        const messageBoxOverlay = document.getElementById('messageBoxOverlay');
+        const messageBoxContent = document.getElementById('messageBoxContent');
+        const messageBoxTitle = document.getElementById('messageBoxTitle');
+        const messageBoxMessage = document.getElementById('messageBoxMessage');
+        const messageBoxOkBtn = document.getElementById('messageBoxOkBtn');
+
+        /**
+         * Displays a custom message box instead of alert().
+         * @param {string} title - The title of the message box.
+         * @param {string} message - The message to display.
+         */
+        function showMessageBox(title, message) {
+            messageBoxTitle.textContent = title;
+            messageBoxMessage.textContent = message;
+            messageBoxOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                messageBoxContent.classList.remove('opacity-0', 'scale-95');
+                messageBoxContent.classList.add('opacity-100', 'scale-100');
+            }, 10);
+
+            return new Promise((resolve) => {
+                messageBoxOkBtn.onclick = () => {
+                    hideMessageBox();
+                    resolve();
+                };
+            });
+        }
+
+        /**
+         * Hides the custom message box.
+         */
+        function hideMessageBox() {
+            messageBoxContent.classList.remove('opacity-100', 'scale-100');
+            messageBoxContent.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                messageBoxOverlay.classList.add('hidden');
+            }, 300);
+        }
+
 
         /**
          * Formats a date string from ISO (YYYY-MM-DD) to M/D/YY.
@@ -270,13 +339,15 @@
         function initializeBinElements() {
             for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
                 const binId = `bin-${i}`;
-                const binElement = createBinElement(binId, `Bin ${i}`, { name: '', date: '', isOccupied: false }, 'bin-small');
+                // Added rounded-xl directly here
+                const binElement = createBinElement(binId, `Bin ${i}`, { name: '', date: '', isOccupied: false }, 'bin-small rounded-xl');
                 smallBinsContainer.appendChild(binElement);
             }
             for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
                 const binId = `bin-large-${i}`;
                 const sequentialBinNumber = TOTAL_SMALL_BINS + i;
-                const binElement = createBinElement(binId, `Bin ${sequentialBinNumber}`, { name: '', date: '', isOccupied: false }, 'bin-large');
+                // Added rounded-xl directly here
+                const binElement = createBinElement(binId, `Bin ${sequentialBinNumber}`, { name: '', date: '', isOccupied: false }, 'bin-large rounded-xl');
                 largeBinsContainer.appendChild(binElement);
             }
         }
@@ -292,7 +363,7 @@
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
                     console.warn("Google Apps Script URL not set. Cannot fetch data.");
-                    alert("Please deploy your Google Apps Script and update 'GOOGLE_APPS_SCRIPT_WEB_APP_URL' in the code.");
+                    await showMessageBox("Configuration Error", "Please deploy your Google Apps Script and update 'GOOGLE_APPS_SCRIPT_WEB_APP_URL' in the code.");
                     const defaultBins = {};
                     for (let i = 1; i <= TOTAL_SMALL_BINS; i++) defaultBins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
                     for (let i = 1; i <= TOTAL_LARGE_BINS; i++) defaultBins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
@@ -340,9 +411,9 @@
 
             } catch (error) {
                 console.error("Error fetching bins from sheet:", error);
-                alert("Error loading bin data from Google Sheet. The page will automatically refresh in 5 seconds.");
-            
-                // Automatically reload after alert is dismissed. 5 seconds delay, adjust as you see fit:
+                await showMessageBox("Data Load Error", "Error loading bin data from Google Sheet. The page will automatically refresh in 5 seconds.");
+               
+                // Automatically reload after message box is dismissed. 5 seconds delay, adjust as you see fit:
                 setTimeout(() => {
                     window.location.reload();
                 }, 5000);
@@ -432,13 +503,13 @@
          * @param {string} id - The unique ID for the bin.
          * @param {string} displayNum - The number to display on the bin.
          * @param {object} data - The initial bin's data {name, date, isOccupied}.
-         * @param {string} sizeClass - 'bin-small' or 'bin-large' for styling.
+         * @param {string} sizeClass - 'bin-small rounded-xl' or 'bin-large rounded-xl' for styling.
          * @returns {HTMLElement} The created bin div element.
          */
         function createBinElement(id, displayNum, data, sizeClass) {
             const binDiv = document.createElement('div');
             binDiv.id = id;
-            // Initial class based on data
+            // Initial class based on data - now includes rounded-xl directly
             binDiv.className = `bin ${sizeClass} ${data.isOccupied ? 'occupied' : 'empty'}`;
 
             // Create inner elements with IDs for granular updates
@@ -526,8 +597,8 @@
         async function updateBinInSheet(binId, data) {
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
-                     console.error("Google Apps Script URL not set. Cannot save data.");
-                     return;
+                   console.error("Google Apps Script URL not set. Cannot save data.");
+                   return;
                 }
                 const payload = {
                     action: 'write',
@@ -550,7 +621,7 @@
 
             } catch (error) {
                 console.error("Error sending update request to sheet:", error);
-                alert("An error occurred during background save. Please check console.");
+                showMessageBox("Save Error", "An error occurred during background save. Please check console.");
             }
         }
 
