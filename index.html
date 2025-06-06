@@ -411,12 +411,10 @@
 
             } catch (error) {
                 console.error("Error fetching bins from sheet:", error);
-                await showMessageBox("Data Load Error", "Error loading bin data from Google Sheet. The page will automatically refresh in 5 seconds.");
-               
-                // Automatically reload after message box is dismissed. 5 seconds delay, adjust as you see fit:
+                // Optionally log or display a notice somewhere the user can't see
                 setTimeout(() => {
                     window.location.reload();
-                }, 5000);
+                }, 5000); // Silently reload after 5 seconds
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
                 startRefreshCountdown(); // Restart countdown after fetch completes (success or failure)
