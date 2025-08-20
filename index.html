@@ -566,69 +566,59 @@
             if (currentBinId) {
                 // ADDED: Clear email field when marking as picked up
                 const emptyBinData = { name: '', email: '', date: '', isOccupied: false };
-
-                // Optimistic UI update: update local state and UI immediately
-                bins[currentBinId] = { ...emptyBinData };
-                updateSingleBinUI(currentBinId, currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`);
-                closeModal();
-
-                // Send update to sheet in the background
                 await updateBinInSheet(currentBinId, emptyBinData);
+                
+                // Update local data and UI immediately for responsiveness
+                bins[currentBinId] = emptyBinData;
+                const binDisplayNumber = currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`;
+                updateSingleBinUI(currentBinId, binDisplayNumber);
+
+                closeModal();
             }
         }
 
         /**
-         * Handles saving changes from the modal.
-         * Updates bin data and UI.
+         * Handles the "Save Changes" action.
+         * Updates bin data with new values from the modal.
          */
         async function saveChanges() {
             if (currentBinId) {
                 const newName = modalNameInput.value.trim();
-                const newEmail = modalEmailInput.value.trim(); // ADDED: Get new email value
+                const newEmail = modalEmailInput.value.trim();
                 const newDate = modalDateInput.value;
+                const isOccupied = newName !== '';
 
-                let newBinData;
-                if (newName || newDate) {
-                    newBinData = {
-                        name: newName,
-                        email: newEmail, // ADDED: Include email in new bin data
-                        date: newDate,
-                        isOccupied: true
-                    };
-                } else {
-                    // This handles saving with no data, effectively clearing the bin
-                    newBinData = { name: '', email: '', date: '', isOccupied: false };
-                }
+                const updatedBinData = {
+                    name: newName,
+                    email: newEmail,
+                    date: newDate,
+                    isOccupied: isOccupied
+                };
+                await updateBinInSheet(currentBinId, updatedBinData);
 
-                // Optimistic UI update: update local state and UI immediately
-                bins[currentBinId] = { ...newBinData };
-                updateSingleBinUI(currentBinId, currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`);
+                // Update local data and UI immediately for responsiveness
+                bins[currentBinId] = updatedBinData;
+                const binDisplayNumber = currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`;
+                updateSingleBinUI(currentBinId, binDisplayNumber);
+
                 closeModal();
-
-                // Send update to sheet in the background
-                await updateBinInSheet(currentBinId, newBinData);
             }
         }
 
-        // Event Listeners for modal buttons
-        markPickedUpBtn.addEventListener('click', markAsPickedUp);
-        saveChangesBtn.addEventListener('click', saveChanges);
-        closeModalBtn.addEventListener('click', closeModal);
+        /**
+         * Initializes the application by setting up the UI and fetching data.
+         */
+        function init() {
+            initializeBinElements();
+            fetchBinsFromSheet();
+            markPickedUpBtn.addEventListener('click', markAsPickedUp);
+            saveChangesBtn.addEventListener('click', saveChanges);
+            closeModalBtn.addEventListener('click', closeModal);
+        }
 
-        // Close modal when clicking outside the content (on the overlay)
-        modalOverlay.addEventListener('click', (event) => {
-            if (event.target === modalOverlay) {
-                closeModal();
-            }
-        });
+        // Start the application when the page is fully loaded
+        window.onload = init;
 
-        // Initialize the app on DOM content loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeBinElements(); // Create all bin DOM elements once
-            fetchBinsFromSheet(); // Initial data fetch to populate the created elements
-            // startRefreshCountdown() is called within fetchBinsFromSheet's finally block
-            // This ensures countdown starts only after initial fetch is complete
-        });
     </script>
 </body>
 </html>
