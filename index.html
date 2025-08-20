@@ -10,11 +10,11 @@
         /* Custom Tailwind Configuration for theme colors and fonts */
         :root {
             --color-page-background: #E8E8E8; /* Slightly darker grey for better contrast */
-            --color-app-background: #FFFFFF;   /* Pure white for the main app container */
-            --color-bin-background: #FFFFFF;   /* White for all bins */
+            --color-app-background: #FFFFFF;    /* Pure white for the main app container */
+            --color-bin-background: #FFFFFF;    /* White for all bins */
 
             /* Darker Orange Palette */
-            --color-primary-orange: #B35200;   /* A deep, rich orange for accents and glows */
+            --color-primary-orange: #B35200;    /* A deep, rich orange for accents and glows */
             --color-secondary-orange: #CC6600; /* A slightly brighter but still dark orange for hover states */
 
             --color-text-dark: #333333; /* Dark grey for primary text */
@@ -451,7 +451,7 @@
 
             const binNameP = document.createElement('p');
             binNameP.id = `bin-name-${id}`; // Unique ID for name
-            binNameP.className = "text-lg sm:text-xl font-bold break-words w-full";
+            binNameP.className = "text-base sm:text-lg font-bold break-words w-full";
             if (data.isOccupied) {
                 binNameP.textContent = data.name;
             } else {
