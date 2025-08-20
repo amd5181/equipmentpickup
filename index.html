@@ -10,11 +10,11 @@
         /* Custom Tailwind Configuration for theme colors and fonts */
         :root {
             --color-page-background: #E8E8E8; /* Slightly darker grey for better contrast */
-            --color-app-background: #FFFFFF;    /* Pure white for the main app container */
-            --color-bin-background: #FFFFFF;    /* White for all bins */
+            --color-app-background: #FFFFFF;   /* Pure white for the main app container */
+            --color-bin-background: #FFFFFF;   /* White for all bins */
 
             /* Darker Orange Palette */
-            --color-primary-orange: #B35200;    /* A deep, rich orange for accents and glows */
+            --color-primary-orange: #B35200;   /* A deep, rich orange for accents and glows */
             --color-secondary-orange: #CC6600; /* A slightly brighter but still dark orange for hover states */
 
             --color-text-dark: #333333; /* Dark grey for primary text */
@@ -141,16 +141,16 @@
                 Refreshing in 30s
             </div>
 
-            <!-- Adjusted Title Size and Color with Images -->
-            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2 text-center flex items-center justify-center space-x-3">
+            <!-- Adjusted Title Size and Color with Images (No rounded-full, smaller, more space) -->
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-center flex items-center justify-center space-x-3">
                 <img src="https://companieslogo.com/img/orig/ALRM-95c12e24.png?t=1720244490" alt="Alarm.com Logo" class="h-5 sm:h-6 inline-block align-middle" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/333333?text=Logo'">
-                <span>
+                <span> <!-- New span to group "Pickup Station" text -->
                     <span class="text-primary-orange">Pickup</span> <span class="text-text-light">Station</span>
                 </span>
                 <img src="https://companieslogo.com/img/orig/ALRM-95c12e24.png?t=1720244490" alt="Alarm.com Logo" class="h-5 sm:h-6 inline-block align-middle" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/333333?text=Logo'">
             </h1>
             <!-- Adjusted Subtitle Size and Color -->
-            <p class="text-xl sm:text-2xl mb-4 leading-relaxed text-center text-black-solid">
+            <p class="text-2xl sm:text-3xl mb-4 leading-relaxed text-center text-black-solid">
                 Once you receive your equipment, please select your name and mark it as picked up. Thank you!
             </p>
         </header>
@@ -176,7 +176,7 @@
     <div id="modalOverlay" class="fixed inset-0 flex items-center justify-center p-4 z-50 hidden">
         <!-- Modal Content Box -->
         <div class="modal-content-box transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
-            <h2 class="text-2xl sm:text-3xl font-bold mb-8 text-center text-black-solid">Bin Details</h2>
+            <h2 class="text-3xl sm:text-4xl font-bold mb-8 text-center text-black-solid">Bin Details</h2>
 
             <div class="space-y-6 mb-8">
                 <div>
@@ -186,11 +186,6 @@
                 <div>
                     <label for="modalName" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Name:</label>
                     <input type="text" id="modalName" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark placeholder-text-light" placeholder="Enter name">
-                </div>
-                <!-- ADDED: Hidden Email Address Input Field -->
-                <div>
-                    <label for="modalEmail" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Email Address:</label>
-                    <input type="email" id="modalEmail" class="w-full p-4 border border-border-light rounded-full focus:outline-none focus:ring-2 focus:ring-primary-orange text-text-dark placeholder-text-light" placeholder="Enter email address">
                 </div>
                 <div>
                     <label for="modalDate" class="block text-text-dark text-base sm:text-lg font-medium mb-2">Date:</label>
@@ -231,7 +226,6 @@
         const modalContent = document.getElementById('modalContent');
         const modalBinNumberInput = document.getElementById('modalBinNumber');
         const modalNameInput = document.getElementById('modalName');
-        const modalEmailInput = document.getElementById('modalEmail'); // ADDED: reference to new email input
         const modalDateInput = document.getElementById('modalDate');
         const markPickedUpBtn = document.getElementById('markPickedUpBtn');
         const saveChangesBtn = document.getElementById('saveChangesBtn');
@@ -276,13 +270,13 @@
         function initializeBinElements() {
             for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
                 const binId = `bin-${i}`;
-                const binElement = createBinElement(binId, `Bin ${i}`, { name: '', email: '', date: '', isOccupied: false }, 'bin-small');
+                const binElement = createBinElement(binId, `Bin ${i}`, { name: '', date: '', isOccupied: false }, 'bin-small');
                 smallBinsContainer.appendChild(binElement);
             }
             for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
                 const binId = `bin-large-${i}`;
                 const sequentialBinNumber = TOTAL_SMALL_BINS + i;
-                const binElement = createBinElement(binId, `Bin ${sequentialBinNumber}`, { name: '', email: '', date: '', isOccupied: false }, 'bin-large');
+                const binElement = createBinElement(binId, `Bin ${sequentialBinNumber}`, { name: '', date: '', isOccupied: false }, 'bin-large');
                 largeBinsContainer.appendChild(binElement);
             }
         }
@@ -298,10 +292,10 @@
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
                     console.warn("Google Apps Script URL not set. Cannot fetch data.");
-                    // In a real-world scenario, you might display a user-facing error.
+                    alert("Please deploy your Google Apps Script and update 'GOOGLE_APPS_SCRIPT_WEB_APP_URL' in the code.");
                     const defaultBins = {};
-                    for (let i = 1; i <= TOTAL_SMALL_BINS; i++) defaultBins[`bin-${i}`] = { name: '', email: '', date: '', isOccupied: false };
-                    for (let i = 1; i <= TOTAL_LARGE_BINS; i++) defaultBins[`bin-large-${i}`] = { name: '', email: '', date: '', isOccupied: false };
+                    for (let i = 1; i <= TOTAL_SMALL_BINS; i++) defaultBins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
+                    for (let i = 1; i <= TOTAL_LARGE_BINS; i++) defaultBins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
                     bins = defaultBins;
                     updateBinsUI();
                     return;
@@ -321,7 +315,6 @@
                         if (binId) {
                             fetchedBins[binId] = {
                                 name: row['Name'] || '',
-                                email: row['Email'] || '', // ADDED: Fetch email from sheet data
                                 date: row['Date'] || '',
                                 isOccupied: String(row['isOccupied'] || '').toLowerCase() === 'true'
                             };
@@ -332,13 +325,13 @@
                 for (let i = 1; i <= TOTAL_SMALL_BINS; i++) {
                     const id = `bin-${i}`;
                     if (!fetchedBins[id]) {
-                        fetchedBins[id] = { name: '', email: '', date: '', isOccupied: false };
+                        fetchedBins[id] = { name: '', date: '', isOccupied: false };
                     }
                 }
                 for (let i = 1; i <= TOTAL_LARGE_BINS; i++) {
                     const id = `bin-large-${i}`;
                     if (!fetchedBins[id]) {
-                        fetchedBins[id] = { name: '', email: '', date: '', isOccupied: false };
+                        fetchedBins[id] = { name: '', date: '', isOccupied: false };
                     }
                 }
 
@@ -348,6 +341,9 @@
             } catch (error) {
                 console.error("Error fetching bins from sheet:", error);
                 // Optionally log or display a notice somewhere the user can't see
+                setTimeout(() => {
+                    window.location.reload();
+                }, 5000); // Silently reload after 5 seconds
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
                 startRefreshCountdown(); // Restart countdown after fetch completes (success or failure)
@@ -433,7 +429,7 @@
          * Creates a single bin DOM element (used only for initial setup).
          * @param {string} id - The unique ID for the bin.
          * @param {string} displayNum - The number to display on the bin.
-         * @param {object} data - The initial bin's data {name, email, date, isOccupied}.
+         * @param {object} data - The initial bin's data {name, date, isOccupied}.
          * @param {string} sizeClass - 'bin-small' or 'bin-large' for styling.
          * @returns {HTMLElement} The created bin div element.
          */
@@ -449,13 +445,13 @@
 
             const binNumberP = document.createElement('p');
             binNumberP.id = `bin-number-${id}`; // Unique ID for bin number
-            binNumberP.className = "text-sm sm:text-base font-bold text-primary-orange mb-1"; // FONT SIZE REDUCED
+            binNumberP.className = "text-base sm:text-lg font-bold text-primary-orange mb-1";
             binNumberP.textContent = displayNum;
             contentDiv.appendChild(binNumberP);
 
             const binNameP = document.createElement('p');
             binNameP.id = `bin-name-${id}`; // Unique ID for name
-            binNameP.className = "text-base sm:text-lg font-bold break-words w-full"; // FONT SIZE REDUCED
+            binNameP.className = "text-lg sm:text-xl font-bold break-words w-full";
             if (data.isOccupied) {
                 binNameP.textContent = data.name;
             } else {
@@ -465,7 +461,7 @@
 
             const binDateP = document.createElement('p');
             binDateP.id = `bin-date-${id}`; // Unique ID for date
-            binDateP.className = "text-xs sm:text-sm italic text-date-text mt-1"; // FONT SIZE REDUCED
+            binDateP.className = "text-sm sm:text-base italic text-date-text mt-1";
             if (data.isOccupied) {
                 binDateP.textContent = formatDate(data.date);
             } else {
@@ -490,7 +486,7 @@
          */
         function openModal(binId) {
             currentBinId = binId;
-            const binData = bins[binId] || { name: '', email: '', date: '', isOccupied: false }; // ADDED: Get email from bin data
+            const binData = bins[binId] || { name: '', date: '', isOccupied: false };
 
             const binNumberText = binId.startsWith('bin-large')
                 ? `Bin ${TOTAL_SMALL_BINS + parseInt(binId.split('-')[2])}`
@@ -498,7 +494,6 @@
 
             modalBinNumberInput.value = binNumberText;
             modalNameInput.value = binData.name;
-            modalEmailInput.value = binData.email; // ADDED: Populate email input
             modalDateInput.value = binData.date; // This value is already inYYYY-MM-DD from Apps Script
 
             modalOverlay.classList.remove('hidden');
@@ -529,16 +524,15 @@
         async function updateBinInSheet(binId, data) {
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
-                    console.error("Google Apps Script URL not set. Cannot save data.");
-                    return;
+                     console.error("Google Apps Script URL not set. Cannot save data.");
+                     return;
                 }
                 const payload = {
                     action: 'write',
                     binId: binId,
                     name: data.name,
-                    email: data.email, // ADDED: Include email in the payload
                     date: data.date,
-                    isOccupied: data.isOccupied
+                    isOccupied: data.isOccupied // This value is still sent to Apps Script, but Apps Script will ignore it for existing rows
                 };
 
                 await fetch(GOOGLE_APPS_SCRIPT_WEB_APP_URL, {
@@ -554,7 +548,7 @@
 
             } catch (error) {
                 console.error("Error sending update request to sheet:", error);
-                // alert("An error occurred during background save. Please check console.");
+                alert("An error occurred during background save. Please check console.");
             }
         }
 
@@ -564,61 +558,67 @@
          */
         async function markAsPickedUp() {
             if (currentBinId) {
-                // ADDED: Clear email field when marking as picked up
-                const emptyBinData = { name: '', email: '', date: '', isOccupied: false };
-                await updateBinInSheet(currentBinId, emptyBinData);
-                
-                // Update local data and UI immediately for responsiveness
-                bins[currentBinId] = emptyBinData;
-                const binDisplayNumber = currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`;
-                updateSingleBinUI(currentBinId, binDisplayNumber);
+                const emptyBinData = { name: '', date: '', isOccupied: false };
 
+                // Optimistic UI update: update local state and UI immediately
+                bins[currentBinId] = { ...emptyBinData };
+                updateSingleBinUI(currentBinId, currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`);
                 closeModal();
+
+                // Send update to sheet in the background
+                await updateBinInSheet(currentBinId, emptyBinData);
             }
         }
 
         /**
-         * Handles the "Save Changes" action.
-         * Updates bin data with new values from the modal.
+         * Handles saving changes from the modal.
+         * Updates bin data and UI.
          */
         async function saveChanges() {
             if (currentBinId) {
                 const newName = modalNameInput.value.trim();
-                const newEmail = modalEmailInput.value.trim();
                 const newDate = modalDateInput.value;
-                const isOccupied = newName !== '';
 
-                const updatedBinData = {
-                    name: newName,
-                    email: newEmail,
-                    date: newDate,
-                    isOccupied: isOccupied
-                };
-                await updateBinInSheet(currentBinId, updatedBinData);
+                let newBinData;
+                if (newName || newDate) {
+                    newBinData = {
+                        name: newName,
+                        date: newDate,
+                        isOccupied: true // This value is still sent to Apps Script, but Apps Script will ignore it for existing rows
+                    };
+                } else {
+                    newBinData = { name: '', date: '', isOccupied: false };
+                }
 
-                // Update local data and UI immediately for responsiveness
-                bins[currentBinId] = updatedBinData;
-                const binDisplayNumber = currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`;
-                updateSingleBinUI(currentBinId, binDisplayNumber);
-
+                // Optimistic UI update: update local state and UI immediately
+                bins[currentBinId] = { ...newBinData };
+                updateSingleBinUI(currentBinId, currentBinId.startsWith('bin-large') ? `Bin ${TOTAL_SMALL_BINS + parseInt(currentBinId.split('-')[2])}` : `Bin ${currentBinId.split('-')[1]}`);
                 closeModal();
+
+                // Send update to sheet in the background
+                await updateBinInSheet(currentBinId, newBinData);
             }
         }
 
-        /**
-         * Initializes the application by setting up the UI and fetching data.
-         */
-        function init() {
-            initializeBinElements();
-            fetchBinsFromSheet();
-            markPickedUpBtn.addEventListener('click', markAsPickedUp);
-            saveChangesBtn.addEventListener('click', saveChanges);
-            closeModalBtn.addEventListener('click', closeModal);
-        }
+        // Event Listeners for modal buttons
+        markPickedUpBtn.addEventListener('click', markAsPickedUp);
+        saveChangesBtn.addEventListener('click', saveChanges);
+        closeModalBtn.addEventListener('click', closeModal);
 
-        // Start the application when the page is fully loaded
-        window.onload = init;
+        // Close modal when clicking outside the content (on the overlay)
+        modalOverlay.addEventListener('click', (event) => {
+            if (event.target === modalOverlay) {
+                closeModal();
+            }
+        });
 
+        // Initialize the app on DOM content loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeBinElements(); // Create all bin DOM elements once
+            fetchBinsFromSheet(); // Initial data fetch to populate the created elements
+            // startRefreshCountdown() is called within fetchBinsFromSheet's finally block
+            // This ensures countdown starts only after initial fetch is complete
+        });
     </script>
 </body>
 </html>
