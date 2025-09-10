@@ -58,9 +58,10 @@
 
         /* Specific styles for bin responsiveness and improved appearance */
         .bin {
-            @apply flex flex-col p-3 sm:p-5 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
-            min-height: 120px;
-            height: 100%;
+            /* Reduced vertical padding to shorten box length */
+            @apply flex flex-col p-2 sm:p-3 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
+            /* Added fixed height to prevent wrapping from expanding the box */
+            height: 100px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
@@ -70,7 +71,7 @@
 
         .bin-large {
             @apply w-full h-full;
-            min-height: 180px;
+            height: 120px; /* Adjusted height for large bins as well */
         }
 
         /* Occupied bin state - now uses thicker orange outline and subtle orange glow */
@@ -162,7 +163,8 @@
         </div>
 
         <!-- Bin Grid Container -->
-        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
+        <!-- Adjusted grid to allow for more content on screen -->
+        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(100px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
             <!-- Bins will be dynamically inserted here by JavaScript -->
         </main>
 
@@ -292,7 +294,6 @@
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
                     console.warn("Google Apps Script URL not set. Cannot fetch data.");
-                    alert("Please deploy your Google Apps Script and update 'GOOGLE_APPS_SCRIPT_WEB_APP_URL' in the code.");
                     const defaultBins = {};
                     for (let i = 1; i <= TOTAL_SMALL_BINS; i++) defaultBins[`bin-${i}`] = { name: '', date: '', isOccupied: false };
                     for (let i = 1; i <= TOTAL_LARGE_BINS; i++) defaultBins[`bin-large-${i}`] = { name: '', date: '', isOccupied: false };
@@ -441,17 +442,17 @@
 
             // Create inner elements with IDs for granular updates
             const contentDiv = document.createElement('div');
-            contentDiv.className = "flex flex-col items-start w-full px-4 text-left";
+            contentDiv.className = "flex flex-col items-start w-full px-2 text-left";
 
             const binNumberP = document.createElement('p');
             binNumberP.id = `bin-number-${id}`; // Unique ID for bin number
-            binNumberP.className = "text-base sm:text-lg font-bold text-primary-orange mb-1";
+            binNumberP.className = "text-sm sm:text-base font-bold text-primary-orange mb-1";
             binNumberP.textContent = displayNum;
             contentDiv.appendChild(binNumberP);
 
             const binNameP = document.createElement('p');
             binNameP.id = `bin-name-${id}`; // Unique ID for name
-            binNameP.className = "text-base sm:text-lg font-bold break-words w-full";
+            binNameP.className = "text-sm font-bold truncate w-full"; // Changed text size and added truncate
             if (data.isOccupied) {
                 binNameP.textContent = data.name;
             } else {
@@ -461,7 +462,7 @@
 
             const binDateP = document.createElement('p');
             binDateP.id = `bin-date-${id}`; // Unique ID for date
-            binDateP.className = "text-sm sm:text-base italic text-date-text mt-1";
+            binDateP.className = "text-xs italic text-date-text mt-1"; // Changed text size
             if (data.isOccupied) {
                 binDateP.textContent = formatDate(data.date);
             } else {
@@ -524,8 +525,8 @@
         async function updateBinInSheet(binId, data) {
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
-                     console.error("Google Apps Script URL not set. Cannot save data.");
-                     return;
+                    console.error("Google Apps Script URL not set. Cannot save data.");
+                    return;
                 }
                 const payload = {
                     action: 'write',
@@ -548,7 +549,7 @@
 
             } catch (error) {
                 console.error("Error sending update request to sheet:", error);
-                alert("An error occurred during background save. Please check console.");
+                // Do not use alert() or window.alert() or confirm() or window.confirm() in the code. The code is running in an iframe and the user will not see the confirmation dialog or alerts.
             }
         }
 
