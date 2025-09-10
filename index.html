@@ -58,8 +58,9 @@
 
         /* Specific styles for bin responsiveness and improved appearance */
         .bin {
-            /* Removed fixed height to allow content to dictate box size */
-            @apply flex flex-col p-2 sm:p-3 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
+            @apply flex flex-col p-3 sm:p-5 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
+            min-height: 120px;
+            height: 100%;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
@@ -69,7 +70,7 @@
 
         .bin-large {
             @apply w-full h-full;
-            /* Removed fixed height */
+            min-height: 180px;
         }
 
         /* Occupied bin state - now uses thicker orange outline and subtle orange glow */
@@ -161,8 +162,7 @@
         </div>
 
         <!-- Bin Grid Container -->
-        <!-- Adjusted grid to allow for more content on screen -->
-        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(100px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
+        <main class="flex-grow p-6 sm:p-10 grid gap-6 grid-rows-[repeat(3,_minmax(120px,_1fr))] grid-cols-5 md:grid-cols-5 lg:grid-cols-5 auto-rows-fr">
             <!-- Bins will be dynamically inserted here by JavaScript -->
         </main>
 
@@ -440,17 +440,17 @@
 
             // Create inner elements with IDs for granular updates
             const contentDiv = document.createElement('div');
-            contentDiv.className = "flex flex-col items-start w-full px-2 text-left";
+            contentDiv.className = "flex flex-col items-start w-full px-4 text-left";
 
             const binNumberP = document.createElement('p');
             binNumberP.id = `bin-number-${id}`; // Unique ID for bin number
-            binNumberP.className = "text-sm sm:text-base font-bold text-primary-orange mb-1";
+            binNumberP.className = "text-base sm:text-lg font-bold text-primary-orange mb-1";
             binNumberP.textContent = displayNum;
             contentDiv.appendChild(binNumberP);
 
             const binNameP = document.createElement('p');
             binNameP.id = `bin-name-${id}`; // Unique ID for name
-            binNameP.className = "text-sm font-bold w-full"; // Removed 'truncate' class
+            binNameP.className = "text-sm sm:text-base font-bold break-words w-full";
             if (data.isOccupied) {
                 binNameP.textContent = data.name;
             } else {
@@ -460,7 +460,7 @@
 
             const binDateP = document.createElement('p');
             binDateP.id = `bin-date-${id}`; // Unique ID for date
-            binDateP.className = "text-xs italic text-date-text mt-1"; // Changed text size
+            binDateP.className = "text-sm sm:text-base italic text-date-text mt-1";
             if (data.isOccupied) {
                 binDateP.textContent = formatDate(data.date);
             } else {
@@ -523,8 +523,8 @@
         async function updateBinInSheet(binId, data) {
             try {
                 if (GOOGLE_APPS_SCRIPT_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
-                    console.error("Google Apps Script URL not set. Cannot save data.");
-                    return;
+                     console.error("Google Apps Script URL not set. Cannot save data.");
+                     return;
                 }
                 const payload = {
                     action: 'write',
@@ -547,7 +547,6 @@
 
             } catch (error) {
                 console.error("Error sending update request to sheet:", error);
-                // Do not use alert() or window.alert() or confirm() or window.confirm() in the code. The code is running in an iframe and the user will not see the confirmation dialog or alerts.
             }
         }
 
