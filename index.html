@@ -58,10 +58,8 @@
 
         /* Specific styles for bin responsiveness and improved appearance */
         .bin {
-            /* Reduced vertical padding to shorten box length */
+            /* Removed fixed height to allow content to dictate box size */
             @apply flex flex-col p-2 sm:p-3 rounded-full cursor-pointer transition-all duration-300 ease-in-out border border-border-light bg-bin-background;
-            /* Added fixed height to prevent wrapping from expanding the box */
-            height: 100px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
@@ -71,7 +69,7 @@
 
         .bin-large {
             @apply w-full h-full;
-            height: 120px; /* Adjusted height for large bins as well */
+            /* Removed fixed height */
         }
 
         /* Occupied bin state - now uses thicker orange outline and subtle orange glow */
@@ -452,7 +450,7 @@
 
             const binNameP = document.createElement('p');
             binNameP.id = `bin-name-${id}`; // Unique ID for name
-            binNameP.className = "text-sm font-bold truncate w-full"; // Changed text size and added truncate
+            binNameP.className = "text-sm font-bold w-full"; // Removed 'truncate' class
             if (data.isOccupied) {
                 binNameP.textContent = data.name;
             } else {
